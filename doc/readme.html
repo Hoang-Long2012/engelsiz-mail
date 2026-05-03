@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Engelsiz Mail NVDA Eklentisi - Kullanım Kılavuzu</title>
+</head>
+<body>
+
+    <h1>Engelsiz Mail NVDA Eklentisi</h1>
+
+    <p><strong>Oluşturan:</strong> Mehmet Aykurt</p>
+    <p><strong>Tarih:</strong> Mayıs 2026</p>
+    <p><strong>Telif Hakkı (Copyright):</strong> (C) 2026 Mehmet Aykurt. Tüm hakları saklıdır.</p>
+
+    <h2>1. Eklentinin Amacı ve Ne İşe Yaradığı</h2>
+    
+    <p>Engelsiz Mail, ekran okuyucu kullanıcılarının Gmail hesaplarına hızlı, kesintisiz ve tam erişilebilir bir şekilde ulaşmasını sağlamak amacıyla tasarlanmış bir NVDA eklentisidir.</p>
+    
+    <p>Geleneksel web tarayıcılarındaki karmaşık arayüzleri ve gereksiz düğme kalabalığını ortadan kaldırır. Tamamen klavye odaklı, minimalist bir sistem sunarak; e-posta okuma, e-posta gönderme, ekli dosyaları yönetme ve klasörleme gibi tüm temel iletişim işlemlerini doğrudan NVDA üzerinden saniyeler içinde yapmanıza olanak tanır.</p>
+
+    <h2>2. Güvenlik ve Gizlilik: Neden Uygulama Şifresi Tercih Edildi?</h2>
+    
+    <p>Kullanıcı güvenliği, bu eklentinin temel prensibidir. Engelsiz Mail eklentisi; e-posta adresinizi, şifrenizi, kişisel verilerinizi veya yazışmalarınızı <strong>kesinlikle toplamaz, kaydetmez ve hiçbir üçüncü taraf sunucuya iletmez.</strong> Tüm bağlantı, sadece sizin bilgisayarınız ile Google sunucuları arasında doğrudan ve şifreli olarak gerçekleşir.</p>
+    
+    <p>Güvenliğinizi en üst düzeyde tutmak için ana Google şifreniz yerine <strong>"Google Uygulama Şifresi"</strong> yöntemi tercih edilmiştir. Bu yöntem, Google'ın doğrudan bu eklentiye özel olarak ürettiği 16 haneli tek kullanımlık bir şifredir. Bu sayede asıl e-posta şifrenizi eklentiye girmek zorunda kalmazsınız ve hesabınız her zaman güvende kalır.</p>
+
+    <h2>3. Google Hesabına Bağlanma (Adım Adım NVDA Rehberi)</h2>
+    
+    <p>Eklentiyi kullanabilmek için Google hesabınızdan bir defaya mahsus uygulama şifresi almanız gerekmektedir. Bu işlemi ekran okuyucunuzla kolayca yapabilmeniz için aşağıdaki adımları sırasıyla takip ediniz.</p>
+
+    <h3>Adım 1: İki Adımlı Doğrulamayı Açma</h3>
+    <p>Bu, Google'ın bir güvenlik kuralıdır ve ileriki günlerde bütün hesaplar için mecburi tutulacaktır. Öncelikle aşağıda yer alan bağlantıya tıklayınız:</p>
+    
+    <p><a href="https://myaccount.google.com/signinoptions/two-step-verification">İki Adımlı Doğrulama Sayfası İçin Tıklayın</a></p>
+    
+    <p>Devam etmek için öncelikle kimliğinizi doğrulayın. Google sizin olduğunuzu doğrulamak ister. Bu sayfa açılınca e-posta şifrenizi yazıp Enter'a basın.</p>
+    <p>Sayfa açıldıktan sonra <strong>"H"</strong> harfine basarak <strong>2 Adımlı Doğrulama</strong> başlığına ulaşın.</p>
+    <p><strong>"B"</strong> harfine basarak <strong>2 Adımlı Doğrulamayı Açın</strong> butonuna ulaşın ve Enter'a basın.</p>
+    <p>Tekrar <strong>"B"</strong> harfine basarak <strong>Bitti</strong> butonunu enterleyin.</p>
+    <p>Sayfayı kapatmadan eklenti için şifre üretme adımına geçin.</p>
+
+    <h3>Adım 2: Uygulama Şifresi Üretme</h3>
+    <p>Öncelikle aşağıda yer alan bağlantıya tıklayın:</p>
+    
+    <p><a href="https://myaccount.google.com/apppasswords">Uygulama Şifreleri Sayfası İçin Tıklayın</a></p>
+    
+    <p>Sayfa açıldıktan sonra <strong>"E"</strong> harfine basarak <strong>Uygulama Adı</strong> yazım alanına ulaşın.</p>
+    <p>İstediğiniz bir ad verin (Örneğin: Engelsiz Mail) ve bir defa Tab yaparak <strong>Oluştur</strong> butonunu enterleyin.</p>
+    <p>Şifreniz otomatik oluşturulacaktır. Açılan sayfada aşağı oklarla indiğinizde sırasıyla şu metinleri göreceksiniz:</p>
+    <ul>
+        <li>Oluşturulan uygulama şifresi</li>
+        <li>Cihazınız için uygulama şifreniz</li>
+        <li><strong>xxxxxxxxxxxxxxxx</strong></li>
+    </ul>
+    <p>Bu noktada 16 haneli şifrenizi göreceksiniz. Bu satırı kopyalayın.</p>
+    <p><strong>"B"</strong> harfine basarak <strong>Tamamlandı</strong> butonunu enterleyin. Artık tarayıcı sayfalarını kapatabilirsiniz.</p>
+
+    <h3>Adım 3: Eklentiye Bağlanma</h3>
+    <p>NVDA'nın Araçlar menüsünden "Engelsiz Mail" alt menüsüne girin ve <strong>Google Hesabınıza Bağlan</strong> seçeneğini enterleyin.</p>
+    <p>E-posta alanına kendi e-posta adresinizi, şifre alanına kopyaladığınız 16 haneli şifreyi (arada boşluk bırakmadan) yazın.</p>
+    <p>Bir defa Tab yaparak <strong>Kaydet ve Bağlan</strong> butonunu enterleyin.</p>
+    <p>Artık eklentiyi sorunsuz kullanabileceksiniz!</p>
+
+    <h2>4. Kullanım ve Klavye Kısayolları</h2>
+    
+    <p>Eklentimizin arayüzü, ekran okuyucu kullanıcıları için özel olarak sadeleştirilmiştir. Tüm işlemlerinizi Windows uyarı seslerine takılmadan, sessiz çalışan Hızlandırıcı (Accelerator) kısayollar ile yapabilirsiniz:</p>
+    
+    <ul>
+        <li><strong>Eklentiyi Açma:</strong> Ctrl + Shift + M (Eklentinin ana penceresini açar.)</li>
+        <li><strong>Yeni Posta Yaz:</strong> Alt + N (Mesaj listesindeyken yeni e-posta penceresini açar.)</li>
+        <li><strong>Mesaj Seçme/Bırakma:</strong> Boşluk (Space) tuşu (Listede üzerinde bulunduğunuz mesajı işaretler veya işaretini kaldırır.)</li>
+        <li><strong>Tümünü İşaretle:</strong> Alt + A (Listedeki tüm mesajları topluca işaretler.)</li>
+        <li><strong>İşaretleri Kaldır:</strong> Alt + D (Tüm işaretlemeleri iptal eder.)</li>
+        <li><strong>Arşive Gönder:</strong> Alt + R (Seçili mesajları arşive göndermeniz veya yeni bir arşiv klasörü oluşturmanız için ilgili menüyü açar.)</li>
+        <li><strong>Seçili Mesajları Sil:</strong> Alt + S (Seçili mesajları veya üzerinde bulunduğunuz mesajı kalıcı olarak çöp kutusuna taşır.)</li>
+        <li><strong>Listeyi Yenile:</strong> F5 (Bulunduğunuz klasörü günceller ve yeni gelen postaları çeker.)</li>
+        <li><strong>Sağ Tık (Uygulama) Menüsü:</strong> Shift + F10 veya Uygulama Tuşu (Listedeki kısayol işlemlerine alternatif olarak bir menü üzerinden de ulaşmanızı sağlar.)</li>
+    </ul>
+
+    <h2>5. Eklenti Kısayolunu Değiştirme (Girdi Hareketleri)</h2>
+    
+    <p>Eklentiyi başlatmak için varsayılan olarak belirlenen <strong>Ctrl + Shift + M</strong> kısayolunu dilediğiniz zaman NVDA üzerinden değiştirebilirsiniz:</p>
+    
+    <ol>
+        <li>NVDA menüsünü açın (Insert + N).</li>
+        <li><strong>Tercihler</strong> alt menüsüne girin ve <strong>Girdi Hareketleri</strong> seçeneğine tıklayın.</li>
+        <li>Açılan listede <strong>Engelsiz Mail</strong> kategorisini bulun ve genişletin.</li>
+        <li>"Engelsiz Mail gelen kutusunu açar" öğesinin üzerindeyken <strong>Ekle</strong> butonuna basın.</li>
+        <li>Kullanmak istediğiniz yeni kısayol tuşuna (Örneğin Alt + Shift + E) basın ve listeden uygun donanım seçeneğini onaylayın.</li>
+        <li>Tamam butonuna basarak pencereyi kapatın. Yeni kısayolunuz anında aktif olacaktır.</li>
+    </ol>
+
+    <h2>6. Öneri, Görüş ve İletişim</h2>
+    
+    <p>Engelsiz Mail, sizden gelen geri bildirimlerle büyümeye ve gelişmeye açıktır. Karşılaştığınız sorunları, eklenti hakkındaki düşüncelerinizi veya eklenmesini istediğiniz yeni özellikleri her zaman geliştirici ile paylaşabilirsiniz.</p>
+    
+    <p>Erişilebilir, hızlı ve güvenli iletişimler dileriz.</p>
+
+</body>
+</html>
