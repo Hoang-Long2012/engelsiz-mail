@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engelsiz Mail NVDA Eklentisi - Kullanım Kılavuzu</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        h1, h2, h3 {
+            line-height: 1.3;
+        }
+        code {
+            font-family: Consolas, monospace;
+        }
+        .not {
+            border-left: 4px solid #555;
+            padding-left: 1rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Engelsiz Mail NVDA Eklentisi</h1>
+
+    <p><strong>Geliştirici:</strong> Mehmet Aykurt</p>
+    <p><strong>Sürüm:</strong> 1.0.0</p>
+    <p><strong>Tarih:</strong> Mayıs 2026</p>
+    <p><strong>Telif Hakkı:</strong> © 2026 Mehmet Aykurt. Tüm hakları saklıdır.</p>
+
+    <h2>İçindekiler</h2>
+    <ol>
+        <li><a href="#amac">Eklentinin Amacı</a></li>
+        <li><a href="#guvenlik">Güvenlik ve Gizlilik</a></li>
+        <li><a href="#baglanti">Google Hesabına Bağlanma</a></li>
+        <li><a href="#kullanim">Kullanım ve Klavye Kısayolları</a></li>
+        <li><a href="#klasorler">Klasörler ve Mesaj İşlemleri</a></li>
+        <li><a href="#kisayol">Eklenti Kısayolunu Değiştirme</a></li>
+        <li><a href="#sinirlar">Bilinen Sınırlar ve Dikkat Edilecek Hususlar</a></li>
+        <li><a href="#iletisim">Öneri, Görüş ve İletişim</a></li>
+    </ol>
+
+    <h2 id="amac">1. Eklentinin Amacı</h2>
+
+    <p>Engelsiz Mail, NVDA ekran okuyucusu kullanıcılarının Gmail hesaplarındaki temel e-posta işlemlerini daha sade, hızlı ve erişilebilir bir arayüz üzerinden gerçekleştirebilmesi amacıyla geliştirilmiş bir NVDA eklentisidir.</p>
+
+    <p>Eklenti; gelen kutusunu görüntüleme, mesaj okuma, yeni e-posta gönderme, mesaj yanıtlama, mesaj iletme, ekli dosyaları kaydetme, mesajları işaretleme, arşivleme ve silme gibi temel işlemleri klavye odaklı bir kullanım düzeniyle sunar.</p>
+
+    <p>Engelsiz Mail, karmaşık web arayüzlerinde kaybolmadan günlük e-posta işlemlerini daha doğrudan yapabilmek isteyen kullanıcılar için hazırlanmıştır.</p>
+
+    <h2 id="guvenlik">2. Güvenlik ve Gizlilik</h2>
+
+    <p>Engelsiz Mail; e-posta adresinizi, Google uygulama şifrenizi, kişi listenizi, mesaj içeriklerinizi veya ekli dosyalarınızı hiçbir üçüncü taraf sunucuya göndermez. Gmail bağlantısı yalnızca kullanıcının bilgisayarı ile Google sunucuları arasında kurulur.</p>
+
+    <p>Eklenti, Gmail hesabına bağlanmak için ana Google hesap şifresi yerine <strong>Google uygulama şifresi</strong> kullanılmasını ister. Uygulama şifresi, iki adımlı doğrulama açık olan Google hesaplarında oluşturulan 16 haneli özel bir erişim kodudur.</p>
+
+    <div class="not">
+        <p><strong>Önemli güvenlik notu:</strong> Engelsiz Mail, e-posta adresinizi ve Google uygulama şifrenizi yalnızca yerel bilgisayarınızdaki NVDA yapılandırma klasöründe saklar. Bu bilgi dışarıya gönderilmez.</p>
+    </div>
+
+    <p>Uygulama şifresi tek kullanımlık bir şifre değildir. Genellikle bir uygulama veya cihaz için bir kez girilir ve Google hesabınızdan iptal edilene kadar kullanılabilir. Google hesap şifrenizi değiştirirseniz, daha önce oluşturduğunuz uygulama şifreleri Google tarafından iptal edilebilir; bu durumda yeni uygulama şifresi oluşturmanız gerekir.</p>
+
+    <p>Bu eklenti, Google tarafından geliştirilmiş resmî bir Google ürünü değildir. Mehmet Aykurt tarafından NVDA kullanıcılarının erişilebilirlik ihtiyacına yönelik olarak geliştirilmiş bağımsız bir eklentidir.</p>
+
+    <h2 id="baglanti">3. Google Hesabına Bağlanma</h2>
+
+    <p>Engelsiz Mail eklentisini kullanabilmek için Google hesabınızda iki adımlı doğrulamanın açık olması ve bu eklenti için bir uygulama şifresi oluşturmanız gerekir.</p>
+
+    <h3>3.1. İki Adımlı Doğrulamayı Açma</h3>
+
+    <p>Aşağıdaki bağlantıdan Google hesabınızın iki adımlı doğrulama sayfasına ulaşabilirsiniz:</p>
+
+    <p><a href="https://myaccount.google.com/signinoptions/two-step-verification">Google İki Adımlı Doğrulama Sayfası</a></p>
+
+    <p>Sayfa açıldığında Google hesabınızla oturum açmanız veya kimliğinizi doğrulamanız istenebilir. Sayfadaki yönergeleri izleyerek iki adımlı doğrulamayı etkinleştirin.</p>
+
+    <h3>3.2. Uygulama Şifresi Oluşturma</h3>
+
+    <p>İki adımlı doğrulama etkinleştirildikten sonra aşağıdaki bağlantıdan uygulama şifresi sayfasına ulaşabilirsiniz:</p>
+
+    <p><a href="https://myaccount.google.com/apppasswords">Google Uygulama Şifreleri Sayfası</a></p>
+
+    <p>Uygulama adı alanına <strong>Engelsiz Mail</strong> yazabilir ve ardından uygulama şifresi oluşturabilirsiniz. Google tarafından verilen 16 haneli şifreyi kopyalayın. Şifreyi Engelsiz Mail eklentisine yazarken boşluk bırakmayın.</p>
+
+    <div class="not">
+        <p><strong>Not:</strong> Bazı Google hesaplarında uygulama şifresi seçeneği görünmeyebilir. Bu durum hesap türüne, güvenlik ayarlarına, kurumsal hesap politikasına veya Google’ın güvenlik tercihine bağlı olabilir.</p>
+    </div>
+
+    <h3>3.3. Engelsiz Mail İçinden Hesap Bilgisi Kaydetme</h3>
+
+    <ol>
+        <li>NVDA menüsünü açın.</li>
+        <li><strong>Araçlar</strong> menüsüne girin.</li>
+        <li><strong>Engelsiz Mail</strong> alt menüsünü açın.</li>
+        <li><strong>Google Hesabına Bağlan</strong> seçeneğini çalıştırın.</li>
+        <li>E-posta adresinizi yazın.</li>
+        <li>Google uygulama şifrenizi boşluksuz olarak yazın.</li>
+        <li><strong>Kaydet ve Bağlan</strong> düğmesine basın.</li>
+    </ol>
+
+    <p>Bilgiler kaydedildikten sonra Engelsiz Mail ana penceresini açarak e-postalarınızı kullanmaya başlayabilirsiniz.</p>
+
+    <h2 id="kullanim">4. Kullanım ve Klavye Kısayolları</h2>
+
+    <p>Engelsiz Mail, klavye kullanımına öncelik verecek biçimde tasarlanmıştır. Ana pencere açıkken aşağıdaki kısayollar kullanılabilir:</p>
+
+    <ul>
+        <li><strong>Eklentiyi açma:</strong> Ctrl + Shift + M</li>
+        <li><strong>Yeni posta yazma:</strong> Alt + N</li>
+        <li><strong>Mesajı işaretleme veya işareti kaldırma:</strong> Boşluk tuşu</li>
+        <li><strong>Listedeki tüm mesajları işaretleme:</strong> Alt + A</li>
+        <li><strong>Tüm işaretleri kaldırma:</strong> Alt + D</li>
+        <li><strong>Seçili mesajları arşive gönderme:</strong> Alt + R</li>
+        <li><strong>Seçili mesajları silme:</strong> Alt + S</li>
+        <li><strong>Listeyi yenileme:</strong> F5</li>
+        <li><strong>Bağlam menüsünü açma:</strong> Shift + F10 veya Uygulama tuşu</li>
+    </ul>
+
+    <p>Bir mesajın üzerinde Enter tuşuna basıldığında mesaj görüntüleme penceresi açılır. Bu pencereden mesajı yanıtlayabilir, iletebilir, arşivleyebilir, silebilir veya varsa ekli dosyaları kaydedebilirsiniz.</p>
+
+    <h2 id="klasorler">5. Klasörler ve Mesaj İşlemleri</h2>
+
+    <p>Engelsiz Mail ana penceresinde Gmail hesabınızdaki temel klasörlere ulaşabilirsiniz. Varsayılan klasörler şunlardır:</p>
+
+    <ul>
+        <li>Gelen Kutusu</li>
+        <li>Tüm Postalar</li>
+        <li>Gönderilmiş Öğeler</li>
+        <li>Taslaklar</li>
+        <li>Çöp Kutusu</li>
+        <li>Spam</li>
+    </ul>
+
+    <p>Gmail hesabınızda oluşturduğunuz özel klasörler veya etiketler de uygun olduğunda listede gösterilir.</p>
+
+    <h3>5.1. Silme İşlemi</h3>
+
+    <p>Gelen Kutusu veya benzeri normal klasörlerde silme işlemi, mesajı Çöp Kutusu’na taşır. Çöp Kutusu içinde yapılan silme işlemi ise kalıcı silme anlamına gelebilir. Bu nedenle Engelsiz Mail, Çöp Kutusu içinde silme yapılırken ayrıca uyarı verir.</p>
+
+    <h3>5.2. Tüm Postalar Klasörü</h3>
+
+    <p>Gmail’de <strong>Tüm Postalar</strong> klasörü klasik klasör mantığından farklı çalışabilir. Gmail’in etiket davranışı, hesap ayarlarınıza göre değişebilir. Bu nedenle Tüm Postalar klasöründe silme veya arşivleme işlemi yapılırken Engelsiz Mail ek uyarı gösterir.</p>
+
+    <h3>5.3. Ekli Dosyaları Kaydetme</h3>
+
+    <p>Bir mesajda ekli dosya varsa mesaj görüntüleme penceresinde <strong>Ekleri Kaydet</strong> düğmesi görünür. Ekler, Windows kullanıcı klasörünüzdeki İndirilenler klasörü altında, mesaj konusuna göre oluşturulan ayrı bir klasöre kaydedilir.</p>
+
+    <h2 id="kisayol">6. Eklenti Kısayolunu Değiştirme</h2>
+
+    <p>Engelsiz Mail için varsayılan açma kısayolu <strong>Ctrl + Shift + M</strong> olarak belirlenmiştir. Bu kısayolu NVDA Girdi Hareketleri bölümünden değiştirebilirsiniz.</p>
+
+    <ol>
+        <li>NVDA menüsünü açın.</li>
+        <li><strong>Tercihler</strong> menüsüne girin.</li>
+        <li><strong>Girdi Hareketleri</strong> seçeneğini açın.</li>
+        <li>Listede <strong>Engelsiz Mail</strong> kategorisini bulun.</li>
+        <li><strong>Engelsiz Mail gelen kutusunu açar</strong> öğesini seçin.</li>
+        <li><strong>Ekle</strong> düğmesine basarak yeni kısayolunuzu tanımlayın.</li>
+        <li>Pencereyi onaylayarak kapatın.</li>
+    </ol>
+
+    <h2 id="sinirlar">7. Bilinen Sınırlar ve Dikkat Edilecek Hususlar</h2>
+
+    <ul>
+        <li>Engelsiz Mail, Gmail hesabı ile IMAP ve SMTP üzerinden çalışır. Gmail hesabınızda IMAP erişiminin açık olması gerekebilir.</li>
+        <li>Google uygulama şifresi oluşturamıyorsanız, hesabınızın güvenlik ayarlarını veya hesap türünü kontrol etmeniz gerekir.</li>
+        <li>Yanıtla ve ilet işlemleri temel posta oluşturma mantığıyla çalışır. Bazı gelişmiş posta istemcilerindeki tüm konuşma dizisi özellikleri ilk sürümde bulunmayabilir.</li>
+        <li>İnternet bağlantısı yoksa veya uygulama şifresi hatalıysa e-posta listesi yüklenemez.</li>
+        <li>Çok büyük ekli dosyalarda gönderme ve kaydetme işlemleri bağlantı hızına göre zaman alabilir.</li>
+    </ul>
+
+    <h2 id="iletisim">8. Öneri, Görüş ve İletişim</h2>
+
+    <p>Engelsiz Mail, erişilebilir e-posta kullanımını kolaylaştırmak amacıyla geliştirilmiştir. Karşılaştığınız hataları, önerilerinizi ve geliştirme taleplerinizi geliştiriciye iletebilirsiniz.</p>
+
+    <p><strong>Geliştirici:</strong> Mehmet Aykurt</p>
+    <p><strong>E-posta:</strong> m.aykurt38@gmail.com</p>
+
+    <p>Erişilebilir, güvenli ve verimli iletişim dileğiyle.</p>
+
+</body>
+</html>
