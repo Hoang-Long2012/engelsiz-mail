@@ -32,7 +32,7 @@ GUNLUK_ON_EKI = "NVDA güncelleme motoru: "
 KULLANICI_ARACISI = (
     "Mozilla/5.0 "
     "(Windows NT 10.0; Win64; x64) "
-    "NVDA-Official-Update-Engine/1.0.0"
+    "NVDA-Official-Update-Engine/1.2.0"
 )
 
 _guncelleme_penceresi_acik = False

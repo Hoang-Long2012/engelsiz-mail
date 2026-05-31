@@ -7,19 +7,62 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.6;
-            max-width: 980px;
+            line-height: 1.7;
+            max-width: 1024px;
             margin: 0 auto;
             padding: 1.5rem;
+            color: #111;
+            background: #fff;
         }
         h1, h2, h3 {
-            line-height: 1.3;
+            line-height: 1.35;
         }
-        code {
+        h1 {
+            font-size: 2rem;
+        }
+        h2 {
+            margin-top: 2rem;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 0.25rem;
+        }
+        h3 {
+            margin-top: 1.35rem;
+        }
+        code, kbd {
             font-family: Consolas, monospace;
+        }
+        kbd {
+            border: 1px solid #999;
+            border-radius: 0.2rem;
+            padding: 0.05rem 0.3rem;
+            background: #f7f7f7;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+        caption {
+            font-weight: bold;
+            text-align: left;
+            margin-bottom: 0.5rem;
+        }
+        th, td {
+            border: 1px solid #999;
+            padding: 0.55rem;
+            vertical-align: top;
+            text-align: left;
+        }
+        th {
+            background: #f2f2f2;
         }
         .not {
             border-left: 4px solid #555;
+            padding-left: 1rem;
+            margin: 1rem 0;
+        }
+        .uyari {
+            border-left: 4px solid #8a5a00;
             padding-left: 1rem;
             margin: 1rem 0;
         }
@@ -30,41 +73,58 @@
     <h1>Engelsiz Mail NVDA Eklentisi</h1>
 
     <p><strong>Geliştirici:</strong> Mehmet Aykurt</p>
-    <p><strong>Sürüm:</strong> 1.0.0</p>
+    <p><strong>Sürüm:</strong> 1.2.0</p>
     <p><strong>Tarih:</strong> Mayıs 2026</p>
-    <p><strong>Telif Hakkı:</strong> © 2026 Mehmet Aykurt. Tüm hakları saklıdır.</p>
+    <p><strong>Lisans:</strong> GNU Genel Kamu Lisansı Sürüm 2</p>
+    <p><strong>Telif Hakkı:</strong> © 2026 Mehmet Aykurt</p>
 
     <h2>İçindekiler</h2>
     <ol>
         <li><a href="#amac">Eklentinin Amacı</a></li>
+        <li><a href="#yenilikci-menu">Yenilikçi Menü Yapısı ve Kullanım Anlayışı</a></li>
         <li><a href="#guvenlik">Güvenlik ve Gizlilik</a></li>
         <li><a href="#baglanti">Google Hesabına Bağlanma</a></li>
-        <li><a href="#kullanim">Kullanım ve Klavye Kısayolları</a></li>
+        <li><a href="#ana-pencere">Ana Pencere ve Menü Yapısı</a></li>
+        <li><a href="#kisayollar">Klavye Kısayolları</a></li>
         <li><a href="#klasorler">Klasörler ve Mesaj İşlemleri</a></li>
-        <li><a href="#kisayol">Eklenti Kısayolunu Değiştirme</a></li>
+        <li><a href="#posta-yazma">Yeni Posta Yazma, Yanıtlama ve İletme</a></li>
+        <li><a href="#taslaklar">Taslak Yönetimi</a></li>
+        <li><a href="#ekler">Ekli Dosyalar</a></li>
+        <li><a href="#oneri-gorus">Öneri ve Görüş Bildirme</a></li>
+        <li><a href="#kisayol-degistirme">Eklenti Açma Kısayolunu Değiştirme</a></li>
         <li><a href="#sinirlar">Bilinen Sınırlar ve Dikkat Edilecek Hususlar</a></li>
-        <li><a href="#iletisim">Öneri, Görüş ve İletişim</a></li>
+        <li><a href="#iletisim">Lisans, İletişim ve Geliştirici Bilgisi</a></li>
     </ol>
 
     <h2 id="amac">1. Eklentinin Amacı</h2>
 
-    <p>Engelsiz Mail, NVDA ekran okuyucusu kullanıcılarının Gmail hesaplarındaki temel e-posta işlemlerini daha sade, hızlı ve erişilebilir bir arayüz üzerinden gerçekleştirebilmesi amacıyla geliştirilmiş bir NVDA eklentisidir.</p>
+    <p>Engelsiz Mail, NVDA ekran okuyucusu kullanıcılarının Gmail hesaplarındaki temel e-posta işlemlerini sade, hızlı, anlaşılır ve klavye odaklı bir arayüz üzerinden yapabilmesi için geliştirilmiş bir NVDA eklentisidir.</p>
 
-    <p>Eklenti; gelen kutusunu görüntüleme, mesaj okuma, yeni e-posta gönderme, mesaj yanıtlama, mesaj iletme, ekli dosyaları kaydetme, mesajları işaretleme, arşivleme ve silme gibi temel işlemleri klavye odaklı bir kullanım düzeniyle sunar.</p>
+    <p>Eklenti; gelen kutusunu görüntüleme, mesaj okuma, yeni e-posta yazma, yanıtlama, iletme, ekli dosya gönderme, ekli dosya kaydetme, mesajları işaretleme, arşivleme, silme, taslak oluşturma, taslak düzenleme ve öneri-görüş bildirme gibi günlük e-posta işlemlerini erişilebilir bir kullanım düzeniyle sunar.</p>
 
-    <p>Engelsiz Mail, karmaşık web arayüzlerinde kaybolmadan günlük e-posta işlemlerini daha doğrudan yapabilmek isteyen kullanıcılar için hazırlanmıştır.</p>
+    <p>Engelsiz Mail’in temel amacı, görme engelli kullanıcıların karmaşık web arayüzleri içinde zaman kaybetmeden, doğrudan NVDA üzerinden güvenli ve verimli biçimde e-posta kullanabilmesini sağlamaktır.</p>
 
-    <h2 id="guvenlik">2. Güvenlik ve Gizlilik</h2>
+    <h2 id="yenilikci-menu">2. Yenilikçi Menü Yapısı ve Kullanım Anlayışı</h2>
 
-    <p>Engelsiz Mail; e-posta adresinizi, Google uygulama şifrenizi, kişi listenizi, mesaj içeriklerinizi veya ekli dosyalarınızı hiçbir üçüncü taraf sunucuya göndermez. Gmail bağlantısı yalnızca kullanıcının bilgisayarı ile Google sunucuları arasında kurulur.</p>
+    <p>Engelsiz Mail’in bu sürümünde eklenti, yalnızca düğmelerden oluşan sınırlı bir yardımcı pencere olmaktan çıkarılmış; Dosya, Düzen, Ayarlar ve Yardım menülerinden oluşan program benzeri bir yapıya kavuşturulmuştur.</p>
+
+    <p>Bu menü düzeni, NVDA eklentilerinde alışılmış kullanım biçiminin ötesine geçen yeni bir yaklaşım olarak değerlendirilmelidir. Amaç, eklentiyi yalnızca bir kısayolla açılan basit bir araç olarak değil, kendi içinde düzenli menüleri, ayarları, yardım sistemi ve kullanıcı geri bildirim alanı bulunan erişilebilir bir uygulama gibi kullanılabilir hâle getirmektir.</p>
+
+    <p>Bu yapı, NVDA eklenti dünyasında daha kapsamlı, daha düzenli ve daha profesyonel arayüzlerin önünü açabilecek öncü bir adım niteliğindedir. Engelsiz Mail, bu yönüyle yalnızca bir e-posta aracı değil, aynı zamanda erişilebilir eklenti tasarımında yeni bir kullanım anlayışının örneği olarak da ele alınmalıdır.</p>
+
+    <h2 id="guvenlik">3. Güvenlik ve Gizlilik</h2>
+
+    <p>Engelsiz Mail; e-posta adresinizi, Google uygulama şifrenizi, kişi geçmişinizi, mesaj içeriklerinizi veya ekli dosyalarınızı herhangi bir üçüncü taraf sunucuya göndermez. Gmail bağlantısı, kullanıcının bilgisayarı ile Google sunucuları arasında kurulur.</p>
 
     <p>Eklenti, Gmail hesabına bağlanmak için ana Google hesap şifresi yerine <strong>Google uygulama şifresi</strong> kullanılmasını ister. Uygulama şifresi, iki adımlı doğrulama açık olan Google hesaplarında oluşturulan 16 haneli özel bir erişim kodudur.</p>
 
     <div class="not">
-        <p><strong>Önemli güvenlik notu:</strong> Engelsiz Mail, e-posta adresinizi ve Google uygulama şifrenizi yalnızca yerel bilgisayarınızdaki NVDA yapılandırma klasöründe saklar. Bu bilgi dışarıya gönderilmez.</p>
+        <p><strong>Önemli güvenlik notu:</strong> Engelsiz Mail, uygulama şifresini düz metin olarak saklamaz. Şifre, Windows’un yerel kullanıcı hesabına bağlı koruma sistemiyle şifrelenerek NVDA yapılandırma klasöründe tutulur. Bu bilgi dışarıya gönderilmez.</p>
     </div>
 
     <p>Uygulama şifresi tek kullanımlık bir şifre değildir. Genellikle bir uygulama veya cihaz için bir kez girilir ve Google hesabınızdan iptal edilene kadar kullanılabilir. Google hesap şifrenizi değiştirirseniz, daha önce oluşturduğunuz uygulama şifreleri Google tarafından iptal edilebilir; bu durumda yeni uygulama şifresi oluşturmanız gerekir.</p>
+
+    <p>Yardım menüsünde yer alan <strong>Öneri ve Görüş Bildir</strong> seçeneği, yalnızca kullanıcı formu doldurup gönder düğmesine bastığında e-posta gönderir. Eklenti, kullanıcı onayı olmadan geliştiriciye otomatik veri göndermez.</p>
 
     <p>Bu eklenti, Google tarafından geliştirilmiş resmî bir Google ürünü değildir. Mehmet Aykurt tarafından NVDA kullanıcılarının erişilebilirlik ihtiyacına yönelik olarak geliştirilmiş bağımsız bir eklentidir.</p>
 
@@ -95,36 +155,130 @@
     <h3>3.3. Engelsiz Mail İçinden Hesap Bilgisi Kaydetme</h3>
 
     <ol>
-        <li>NVDA menüsünü açın.</li>
-        <li><strong>Araçlar</strong> menüsüne girin.</li>
-        <li><strong>Engelsiz Mail</strong> alt menüsünü açın.</li>
-        <li><strong>Google Hesabına Bağlan</strong> seçeneğini çalıştırın.</li>
+        <li>Engelsiz Mail ana penceresini <strong>NVDA + Shift + M</strong> kısayoluyla veya NVDA menüsündeki <strong>Araçlar &gt; Engelsiz Mail</strong> seçeneğiyle açın.</li>
+        <li>Ana pencere açıkken <strong>Alt</strong> tuşuna basarak menü çubuğuna geçin.</li>
+        <li><strong>Dosya</strong> menüsünü açın.</li>
+        <li><strong>Bağlan...</strong> seçeneğini çalıştırın.</li>
         <li>E-posta adresinizi yazın.</li>
         <li>Google uygulama şifrenizi boşluksuz olarak yazın.</li>
         <li><strong>Kaydet ve Bağlan</strong> düğmesine basın.</li>
     </ol>
 
-    <p>Bilgiler kaydedildikten sonra Engelsiz Mail ana penceresini açarak e-postalarınızı kullanmaya başlayabilirsiniz.</p>
+    <p>Bilgiler kaydedildikten sonra Engelsiz Mail ana penceresi üzerinden e-postalarınızı kullanmaya başlayabilirsiniz. Hesap bilgisi yoksa ana pencere yine açılır ve kullanıcı, Dosya menüsündeki Bağlan seçeneğine yönlendirilir.</p>
 
-    <h2 id="kullanim">4. Kullanım ve Klavye Kısayolları</h2>
+    <h2 id="ana-pencere">4. Ana Pencere ve Menü Yapısı</h2>
 
-    <p>Engelsiz Mail, klavye kullanımına öncelik verecek biçimde tasarlanmıştır. Ana pencere açıkken aşağıdaki kısayollar kullanılabilir:</p>
+    <p>Engelsiz Mail ana penceresi açıldığında varsayılan olarak <strong>Gelen Kutusu</strong> seçilir ve odak doğrudan mesaj listesine verilir. Böylece kullanıcı, pencere açılır açılmaz yukarı ve aşağı ok tuşlarıyla e-postalar arasında dolaşabilir.</p>
+
+    <p>Pencere açıkken <strong>Alt</strong> tuşuna basıldığında menü çubuğu açılır. Menü sırası şöyledir:</p>
 
     <ul>
-        <li><strong>Eklentiyi açma:</strong> Ctrl + Shift + M</li>
-        <li><strong>Yeni posta yazma:</strong> Alt + N</li>
-        <li><strong>Mesajı işaretleme veya işareti kaldırma:</strong> Boşluk tuşu</li>
-        <li><strong>Listedeki tüm mesajları işaretleme:</strong> Alt + A</li>
-        <li><strong>Tüm işaretleri kaldırma:</strong> Alt + D</li>
-        <li><strong>Seçili mesajları arşive gönderme:</strong> Alt + R</li>
-        <li><strong>Seçili mesajları silme:</strong> Alt + S</li>
-        <li><strong>Listeyi yenileme:</strong> F5</li>
-        <li><strong>Bağlam menüsünü açma:</strong> Shift + F10 veya Uygulama tuşu</li>
+        <li><strong>Dosya</strong></li>
+        <li><strong>Düzen</strong></li>
+        <li><strong>Ayarlar</strong></li>
+        <li><strong>Yardım</strong></li>
     </ul>
 
-    <p>Bir mesajın üzerinde Enter tuşuna basıldığında mesaj görüntüleme penceresi açılır. Bu pencereden mesajı yanıtlayabilir, iletebilir, arşivleyebilir, silebilir veya varsa ekli dosyaları kaydedebilirsiniz.</p>
+    <h3>4.1. Dosya Menüsü</h3>
 
-    <h2 id="klasorler">5. Klasörler ve Mesaj İşlemleri</h2>
+    <ul>
+        <li><strong>Bağlan...</strong>: Gmail hesabı için e-posta adresi ve Google uygulama şifresinin girildiği bağlantı penceresini açar.</li>
+        <li><strong>Yeni Posta Yaz</strong>: Yeni e-posta oluşturma penceresini açar.</li>
+        <li><strong>Çıkış</strong>: Engelsiz Mail ana penceresini kapatır.</li>
+    </ul>
+
+    <h3>4.2. Düzen Menüsü</h3>
+
+    <ul>
+        <li><strong>Tümünü İşaretle</strong>: Listede görünen tüm mesajları seçili duruma getirir.</li>
+        <li><strong>İşaretleri Kaldır</strong>: Tüm mesaj işaretlerini kaldırır.</li>
+        <li><strong>Arşive Gönder</strong>: İşaretli veya seçili mesajları arşive gönderir.</li>
+        <li><strong>Sil</strong>: İşaretli veya seçili mesajları siler.</li>
+        <li><strong>Yenile</strong>: Seçili klasördeki mesaj listesini yeniden yükler.</li>
+    </ul>
+
+    <h3>4.3. Ayarlar Menüsü</h3>
+
+    <ul>
+        <li><strong>E-Posta Sayısı...</strong>: Bir klasörde kaç e-postanın listeleneceğini belirler. Varsayılan değer 25’tir. Kabul edilen aralık 1 ile 100 arasındadır.</li>
+    </ul>
+
+    <h3>4.4. Yardım Menüsü</h3>
+
+    <ul>
+        <li><strong>Yardım Kılavuzu</strong>: Bu kullanım kılavuzunu açar.</li>
+        <li><strong>Öneri ve Görüş Bildir...</strong>: Geliştiriciye öneri, görüş veya sorun bildirimi göndermek için erişilebilir bildirim penceresini açar.</li>
+    </ul>
+
+    <h2 id="kisayollar">5. Klavye Kısayolları</h2>
+
+    <p>Engelsiz Mail, klavye kullanımını merkeze alan bir yapıyla hazırlanmıştır. Aşağıdaki kısayollar ana pencere ve ilgili işlem pencerelerinde kullanılabilir.</p>
+
+    <table>
+        <caption>Temel klavye kısayolları</caption>
+        <thead>
+            <tr>
+                <th>Kısayol</th>
+                <th>İşlev</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd></td>
+                <td>Engelsiz Mail ana penceresini açar.</td>
+            </tr>
+            <tr>
+                <td><kbd>Alt</kbd></td>
+                <td>Ana pencere menü çubuğunu açar.</td>
+            </tr>
+            <tr>
+                <td><kbd>Alt</kbd> + <kbd>N</kbd></td>
+                <td>Yeni posta yazma penceresini açar.</td>
+            </tr>
+            <tr>
+                <td><kbd>Alt</kbd> + <kbd>A</kbd></td>
+                <td>Listedeki tüm mesajları işaretler.</td>
+            </tr>
+            <tr>
+                <td><kbd>Alt</kbd> + <kbd>D</kbd></td>
+                <td>Listedeki tüm işaretleri kaldırır.</td>
+            </tr>
+            <tr>
+                <td><kbd>Alt</kbd> + <kbd>R</kbd></td>
+                <td>Seçili veya işaretli mesajları arşive gönderir.</td>
+            </tr>
+            <tr>
+                <td><kbd>Alt</kbd> + <kbd>S</kbd></td>
+                <td>Seçili veya işaretli mesajları siler.</td>
+            </tr>
+            <tr>
+                <td><kbd>F5</kbd></td>
+                <td>Mesaj listesini elle yeniler.</td>
+            </tr>
+            <tr>
+                <td><kbd>Enter</kbd></td>
+                <td>Seçili mesajı açar. Taslaklar klasöründe seçili taslağı düzenleme penceresinde açar.</td>
+            </tr>
+            <tr>
+                <td><kbd>Boşluk</kbd></td>
+                <td>Mesaj listesindeki seçili e-postayı işaretler veya işaretini kaldırır.</td>
+            </tr>
+            <tr>
+                <td><kbd>Shift</kbd> + <kbd>F10</kbd> veya Uygulama tuşu</td>
+                <td>Mesaj listesi içerik menüsünü açar.</td>
+            </tr>
+            <tr>
+                <td><kbd>Esc</kbd></td>
+                <td>Mesaj okuma, yeni posta veya taslak düzenleme pencerelerinde kapatma işlemi yapar. Yazılmakta olan posta varsa taslaklara kaydetme sorusu sorulabilir.</td>
+            </tr>
+            <tr>
+                <td><kbd>Alt</kbd> + <kbd>F4</kbd></td>
+                <td>Engelsiz Mail ana penceresini kapatır.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2 id="klasorler">6. Klasörler ve Mesaj İşlemleri</h2>
 
     <p>Engelsiz Mail ana penceresinde Gmail hesabınızdaki temel klasörlere ulaşabilirsiniz. Varsayılan klasörler şunlardır:</p>
 
@@ -137,21 +291,75 @@
         <li>Spam</li>
     </ul>
 
-    <p>Gmail hesabınızda oluşturduğunuz özel klasörler veya etiketler de uygun olduğunda listede gösterilir.</p>
+    <p>Gmail hesabınızda oluşturduğunuz özel klasörler veya etiketler de uygun olduğunda listede gösterilir. Klasör değiştirildiğinde, Ayarlar menüsünde belirlenen e-posta sayısı kadar son mesaj listelenir.</p>
 
-    <h3>5.1. Silme İşlemi</h3>
+    <h3>6.1. Mesaj Okuma</h3>
 
-    <p>Gelen Kutusu veya benzeri normal klasörlerde silme işlemi, mesajı Çöp Kutusu’na taşır. Çöp Kutusu içinde yapılan silme işlemi ise kalıcı silme anlamına gelebilir. Bu nedenle Engelsiz Mail, Çöp Kutusu içinde silme yapılırken ayrıca uyarı verir.</p>
+    <p>Bir mesaj üzerinde <strong>Enter</strong> tuşuna basıldığında mesaj okuma penceresi açılır. Mesaj açıldığında okunmuş kabul edilir. Pencere <strong>Esc</strong> tuşuyla veya Kapat düğmesiyle kapatılabilir. Pencere kapandığında liste sessiz biçimde yenilenir ve mümkünse odak aynı e-postada kalır.</p>
 
-    <h3>5.2. Tüm Postalar Klasörü</h3>
+    <h3>6.2. İşaretleme</h3>
 
-    <p>Gmail’de <strong>Tüm Postalar</strong> klasörü klasik klasör mantığından farklı çalışabilir. Gmail’in etiket davranışı, hesap ayarlarınıza göre değişebilir. Bu nedenle Tüm Postalar klasöründe silme veya arşivleme işlemi yapılırken Engelsiz Mail ek uyarı gösterir.</p>
+    <p>Mesaj listesinde <strong>Boşluk</strong> tuşu ile mesaj işaretlenebilir veya işareti kaldırılabilir. Birden fazla ileti üzerinde işlem yapılacaksa işaretleme yöntemi kullanılabilir.</p>
 
-    <h3>5.3. Ekli Dosyaları Kaydetme</h3>
+    <h3>6.3. Arşivleme ve Silme</h3>
 
-    <p>Bir mesajda ekli dosya varsa mesaj görüntüleme penceresinde <strong>Ekleri Kaydet</strong> düğmesi görünür. Ekler, Windows kullanıcı klasörünüzdeki İndirilenler klasörü altında, mesaj konusuna göre oluşturulan ayrı bir klasöre kaydedilir.</p>
+    <p>Arşive gönderme ve silme işlemleri Düzen menüsünden, kısayollardan veya mesaj listesi içerik menüsünden yapılabilir. Silme işleminden sonra liste sessiz biçimde yenilenir ve odak, mümkünse silinen e-postanın bulunduğu yere en yakın mesaja verilir.</p>
 
-    <h2 id="kisayol">6. Eklenti Kısayolunu Değiştirme</h2>
+    <p>Gelen Kutusu veya benzeri normal klasörlerde silme işlemi mesajı Çöp Kutusu’na taşır. Çöp Kutusu içinde yapılan silme işlemi kalıcı silme anlamına gelebilir. Bu nedenle Engelsiz Mail, Çöp Kutusu içinde silme yapılırken ayrıca uyarı verir.</p>
+
+    <h3>6.4. Tüm Postalar Klasörü</h3>
+
+    <p>Gmail’de <strong>Tüm Postalar</strong> klasörü klasik klasör mantığından farklı çalışabilir. Gmail’in etiket davranışı, hesap ayarlarına göre değişebilir. Bu nedenle Tüm Postalar klasöründe silme veya arşivleme işlemi yapılırken Engelsiz Mail ek uyarı gösterir.</p>
+
+    <h2 id="posta-yazma">7. Yeni Posta Yazma, Yanıtlama ve İletme</h2>
+
+    <h3>7.1. Yeni Posta Yazma</h3>
+
+    <p>Yeni posta yazmak için <strong>Dosya &gt; Yeni Posta Yaz</strong> seçeneğini veya <strong>Alt + N</strong> kısayolunu kullanabilirsiniz. Açılan pencerede alıcı, konu, mesaj metni ve ekli dosya alanları bulunur.</p>
+
+    <p>Posta hazırlanırken <strong>Gönder</strong> düğmesiyle ileti gönderilebilir. Gönderilmeden saklanmak istenirse <strong>Taslaklara Kaydet</strong> düğmesi kullanılabilir.</p>
+
+    <h3>7.2. Yanıtlama</h3>
+
+    <p>Bir mesaj okuma penceresinde <strong>Yanıtla</strong> seçeneği kullanıldığında yanıt penceresi açılır. Yanıtlanan iletinin konuşma zinciri bilgileri korunur. Bu sayede yanıtlar, Gmail ve benzeri istemcilerde ilgili konuşmanın altında daha düzenli biçimde yer alır.</p>
+
+    <h3>7.3. İletme</h3>
+
+    <p>Bir mesajı başka bir alıcıya göndermek için mesaj okuma penceresindeki <strong>İlet</strong> seçeneği kullanılabilir. Kullanıcı, gerekirse Dosya ekle düğmesiyle yeni ekli dosyalar ekleyebilir.</p>
+
+    <h2 id="taslaklar">8. Taslak Yönetimi</h2>
+
+    <p>Engelsiz Mail’de taslaklar yalnızca okunabilen iletiler değildir. Taslaklar klasöründeki iletiler düzenlenebilir, gönderilebilir, silinebilir veya yeniden taslaklara kaydedilebilir.</p>
+
+    <h3>8.1. Yeni Taslak Oluşturma</h3>
+
+    <p>Yeni posta yazma penceresinde alıcı, konu veya mesaj alanlarından biri doldurulduktan sonra <strong>Taslaklara Kaydet</strong> düğmesine basılırsa ileti Gmail Taslaklar klasörüne kaydedilir.</p>
+
+    <p>Yeni posta penceresinde <strong>Esc</strong> tuşuna basıldığında ve içerik boş değilse, eklenti değişiklikleri taslaklara kaydedip kaydetmeyeceğinizi sorar.</p>
+
+    <h3>8.2. Taslak Düzenleme</h3>
+
+    <p>Taslaklar klasöründe bir taslak üzerinde <strong>Enter</strong> tuşuna basıldığında normal okuma penceresi yerine <strong>Taslak Düzenle</strong> penceresi açılır. Bu pencerede alıcı, konu, mesaj ve ekler düzenlenebilir.</p>
+
+    <h3>8.3. Taslağı Gönderme, Kaydetme veya Silme</h3>
+
+    <p>Taslak düzenleme penceresinde <strong>Gönder</strong>, <strong>Taslaklara Kaydet</strong>, <strong>Taslağı Sil</strong> ve <strong>İptal</strong> seçenekleri bulunur. Gönderilen veya silinen taslak, işlem başarılı olduğunda Taslaklar klasöründen kaldırılır. Yeniden kaydedilen taslak, güncellenmiş hâliyle Taslaklar klasöründe yer alır.</p>
+
+    <h2 id="ekler">9. Ekli Dosyalar</h2>
+
+    <p>Yeni posta, yanıt, iletme ve taslak düzenleme pencerelerinde dosya ekleme desteği vardır. <strong>Dosya ekle</strong> düğmesiyle gönderilecek dosyalar seçilebilir; <strong>Eki kaldır</strong> düğmesiyle seçili ek listeden çıkarılabilir.</p>
+
+    <p>Gelen bir mesajda ekli dosya varsa mesaj okuma penceresinde <strong>Ekleri Kaydet</strong> düğmesi görünür. Ekler, Windows kullanıcı klasörünüzdeki İndirilenler klasörü altında, mesaj konusuna göre oluşturulan ayrı bir klasöre kaydedilir.</p>
+
+    <h2 id="oneri-gorus">10. Öneri ve Görüş Bildirme</h2>
+
+    <p>Engelsiz Mail, kullanıcı deneyimine göre gelişen bir eklenti olarak tasarlanmıştır. Yardım menüsündeki <strong>Öneri ve Görüş Bildir...</strong> seçeneğiyle geliştiriciye doğrudan bildirim gönderilebilir.</p>
+
+    <p>Bu pencerede ad, soyad, yanıt için e-posta adresi, konu ve mesaj alanları bulunur. Yanıt alabilmek için e-posta adresinin doğru yazılması önemlidir. Mesaj alanına karşılaşılan sorun, geliştirme önerisi, kullanım deneyimi veya genel görüş yazılabilir.</p>
+
+    <p>Bildirim gönderimi, kullanıcının bağlı Gmail hesabı üzerinden yapılır. Hedef geliştirici adresi ekranda gösterilmez. Kullanıcının yazdığı yanıt e-posta adresi, geliştiriciye ulaşan bildirimin içinde yer alır.</p>
+
+    <h2 id="kisayol-degistirme">11. Eklenti Açma Kısayolunu Değiştirme</h2>
 
     <p>Engelsiz Mail için varsayılan açma kısayolu <strong>Ctrl + Shift + M</strong> olarak belirlenmiştir. Bu kısayolu NVDA Girdi Hareketleri bölümünden değiştirebilirsiniz.</p>
 
@@ -165,24 +373,26 @@
         <li>Pencereyi onaylayarak kapatın.</li>
     </ol>
 
-    <h2 id="sinirlar">7. Bilinen Sınırlar ve Dikkat Edilecek Hususlar</h2>
+    <h2 id="sinirlar">12. Bilinen Sınırlar ve Dikkat Edilecek Hususlar</h2>
 
     <ul>
         <li>Engelsiz Mail, Gmail hesabı ile IMAP ve SMTP üzerinden çalışır. Gmail hesabınızda IMAP erişiminin açık olması gerekebilir.</li>
         <li>Google uygulama şifresi oluşturamıyorsanız, hesabınızın güvenlik ayarlarını veya hesap türünü kontrol etmeniz gerekir.</li>
-        <li>Yanıtla ve ilet işlemleri temel posta oluşturma mantığıyla çalışır. Bazı gelişmiş posta istemcilerindeki tüm konuşma dizisi özellikleri ilk sürümde bulunmayabilir.</li>
         <li>İnternet bağlantısı yoksa veya uygulama şifresi hatalıysa e-posta listesi yüklenemez.</li>
-        <li>Çok büyük ekli dosyalarda gönderme ve kaydetme işlemleri bağlantı hızına göre zaman alabilir.</li>
+        <li>Çok büyük ekli dosyalarda gönderme, kaydetme ve taslaklara ekleme işlemleri bağlantı hızına göre zaman alabilir.</li>
+        <li>Gmail’in etiket ve klasör davranışı klasik masaüstü posta programlarından farklı olabilir. Özellikle Tüm Postalar ve Çöp Kutusu klasörlerinde ek uyarılar dikkate alınmalıdır.</li>
+        <li>Öneri ve Görüş Bildir özelliği, bildirim gönderebilmek için bağlı Gmail hesabını kullanır. Hesap bilgisi yoksa önce Dosya menüsünden Bağlan seçeneğiyle hesap bilgisi kaydedilmelidir.</li>
     </ul>
 
-    <h2 id="iletisim">8. Öneri, Görüş ve İletişim</h2>
+    <h2 id="iletisim">13. Lisans, İletişim ve Geliştirici Bilgisi</h2>
 
-    <p>Engelsiz Mail, erişilebilir e-posta kullanımını kolaylaştırmak amacıyla geliştirilmiştir. Karşılaştığınız hataları, önerilerinizi ve geliştirme taleplerinizi geliştiriciye iletebilirsiniz.</p>
+    <p>Engelsiz Mail, GNU Genel Kamu Lisansı Sürüm 2 kapsamında özgür yazılım olarak yayımlanmıştır. Kaynak kodun incelenmesi, değiştirilmesi ve lisans koşulları çerçevesinde yeniden dağıtılması mümkündür.</p>
 
     <p><strong>Geliştirici:</strong> Mehmet Aykurt</p>
     <p><strong>E-posta:</strong> m.aykurt38@gmail.com</p>
+    <p><strong>Kaynak kod:</strong> <a href="https://github.com/MehmetAykurt/engelsiz-mail">https://github.com/MehmetAykurt/engelsiz-mail</a></p>
 
-    <p>Erişilebilir, güvenli ve verimli iletişim dileğiyle.</p>
+    <p>Engelsiz Mail; erişilebilir, güvenli, düzenli ve kullanıcıyı yormayan e-posta kullanımını hedefleyen bir NVDA eklentisidir.</p>
 
 </body>
 </html>
