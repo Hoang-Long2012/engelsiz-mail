@@ -1,163 +1,87 @@
 # Engelsiz Mail
 
-**Engelsiz Mail**, NVDA ekran okuyucusu için geliştirilmiş, Gmail hesabı üzerinden e-posta okuma ve gönderme işlemlerini sade, erişilebilir ve klavye odaklı bir arayüzle sunan bir NVDA eklentisidir.
+**Engelsiz Mail**, NVDA ekran okuyucusu kullanıcıları için geliştirilen erişilebilir bir Gmail e-posta eklentisidir.
 
-Eklenti; görme engelli kullanıcıların karmaşık posta istemcilerine ihtiyaç duymadan, NVDA içinden hızlı biçimde e-posta okumasını, yanıtlamasını, iletmesini, taslak oluşturmasını ve dosya ekiyle posta göndermesini amaçlar.
+Bu eklenti, görme engelli kullanıcıların e-posta okuma, yazma, yanıtlama, iletme, arşivleme, taşıma, silme, taslak yönetimi ve bağlantı denetimi gibi temel işlemleri NVDA üzerinden daha sade ve erişilebilir biçimde yapabilmesini amaçlar.
 
-## Öne çıkan özellikler
+## Bilgiler
 
-- Gmail hesabı ile IMAP ve SMTP üzerinden çalışma.
-- Google uygulama şifresiyle güvenli bağlantı.
-- Uygulama şifresini Windows DPAPI ile yerel kullanıcı hesabına bağlı şifreli saklama.
-- Gelen kutusu, gönderilmiş öğeler, taslaklar, çöp kutusu, spam ve diğer Gmail klasörlerini listeleme.
-- E-postaları okuma, yanıtlama, iletme, silme ve arşivleme.
-- Ekli dosya gönderme ve gelen ekleri kaydetme.
-- Taslak oluşturma, taslak düzenleme, taslak gönderme, taslak silme ve taslaklara kaydetme.
-- Listelenecek e-posta sayısını kullanıcı tarafından belirleme.
-- NVDA ile uyumlu menü tabanlı ana pencere.
-- Yardım menüsünden öneri ve görüş bildirme.
+- **Eklenti adı:** Engelsiz Mail
+- **Sürüm:** 1.3.0
+- **Geliştirici:** Mehmet Aykurt
+- **E-posta:** m.aykurt38@gmail.com
+- **Resmî web sitesi:** https://mehmetaykurt.com.tr
+- **Telif hakkı:** © 2026 Mehmet Aykurt
+- **Lisans:** GNU Genel Kamu Lisansı, sürüm 2.0
 
-## Menü yapısı
+## Temel Özellikler
 
-Engelsiz Mail, klasik düğme yığınları yerine program benzeri bir menü yapısıyla çalışır. Ana pencere açıkken `Alt` tuşuna basılarak menülere ulaşılabilir.
+- Gmail hesabına uygulama şifresiyle bağlanma
+- E-posta klasörlerini listeleme
+- Gelen e-postaları okuma
+- Yeni e-posta yazma
+- E-postaları yanıtlama ve iletme
+- Taslak oluşturma, düzenleme, gönderme ve silme
+- E-posta eklerini kaydetme
+- Arşiv klasörü oluşturma, yeniden adlandırma ve silme
+- E-postaları arşive gönderme
+- E-postaları Gelen Kutusu veya özel arşiv klasörlerine taşıma
+- Çöp Kutusu, Spam, Taslaklar ve Tüm Postalar için açıklayıcı işlem uyarıları
+- Ayrıntılı bağlantı denetimi
+- Sağ tık menüsü desteği
+- Yazı tipi, yazı boyutu, yazı stili, metin rengi ve arka plan rengi ayarları
+- Yardım, Yenilikler, Hakkında ve Öneri-Görüş bölümleri
 
-Bu yapı, NVDA eklentilerinde daha düzenli, genişletilebilir ve masaüstü uygulamasına yakın arayüzlerin kullanılabileceğini gösteren önemli bir adımdır.
+## Google Hesabına Bağlanma
 
-Menüler şu şekildedir:
+Engelsiz Mail’i kullanabilmek için Google hesabınızda iki adımlı doğrulamanın açık olması ve bu eklenti için bir uygulama şifresi oluşturulması gerekir.
 
-```text
-Dosya
-Düzen
-Ayarlar
-Yardım
-```
+Uygulama şifresi oluşturmak için Google hesabınızda aşağıdaki sayfayı kullanabilirsiniz:
 
-### Dosya menüsü
+https://myaccount.google.com/apppasswords
 
-```text
-Bağlan...
-Yeni Posta Yaz
-Çıkış
-```
+Google tarafından verilen 16 haneli uygulama şifresi, Engelsiz Mail içindeki **Bağlan...** penceresine boşluksuz olarak yazılmalıdır.
 
-### Düzen menüsü
+## Kullanım
 
-```text
-Tümünü İşaretle
-İşaretleri Kaldır
-Arşive Gönder
-Sil
-Yenile
-```
+Eklenti kurulduktan sonra Engelsiz Mail ana penceresi NVDA menüsündeki **Araçlar > Engelsiz Mail** seçeneğiyle veya tanımlı kısayolla açılabilir.
 
-### Ayarlar menüsü
+Ana pencerede klasör seçimi, e-posta listesi ve menü seçenekleri klavye ile kullanılabilir.
 
-```text
-E-Posta Sayısı...
-```
+Temel menüler:
 
-### Yardım menüsü
+- **Dosya:** Yeni e-posta yazma, bağlanma, bağlantı denetimi ve çıkış işlemleri
+- **Düzen:** Arşivleme, taşıma, silme, yenileme ve işaretleme işlemleri
+- **Görünüm:** Yazı tipi, yazı boyutu, stil ve renk ayarları
+- **Ayarlar:** Listelenecek e-posta sayısı
+- **Yardım:** Yardım kılavuzu, yenilikler, hakkında ve öneri-görüş bölümleri
 
-```text
-Yardım Kılavuzu
-Öneri ve Görüş Bildir...
-```
+Ayrıntılı kullanım bilgileri için eklenti içindeki **Yardım Kılavuzu** bölümüne bakılabilir.
 
-## Kısayollar
+## Güvenlik ve Gizlilik
 
-| Kısayol | İşlev |
-|---|---|
-| `Ctrl+Shift+M` | Engelsiz Mail ana penceresini açar. |
-| `Alt` | Ana pencere menüsünü açar. |
-| `Alt+N` | Yeni posta yazma penceresini açar. |
-| `Alt+A` | Listedeki tüm e-postaları işaretler. |
-| `Alt+D` | Listedeki işaretleri kaldırır. |
-| `Alt+R` | Seçili veya işaretli e-postaları arşive gönderir. |
-| `Alt+S` | Seçili veya işaretli e-postaları siler. |
-| `F5` | Listeyi elle yeniler. |
-| `Enter` | Seçili e-postayı açar. |
-| `Boşluk` | Seçili e-postayı işaretler veya işaretini kaldırır. |
-| `Shift+F10` | Mesaj listesi içerik menüsünü açar. |
-| `Esc` | Mesaj veya yazma penceresini kapatır; gerekiyorsa taslak kaydetme sorusu sorar. |
-| `Alt+F4` | Engelsiz Mail ana penceresini kapatır. |
+Engelsiz Mail, Gmail hesabına ana Google hesap şifresiyle değil, Google uygulama şifresiyle bağlanır.
 
-## Gmail hesabına bağlanma
+Uygulama şifresi Windows kullanıcı hesabına bağlı şifreli biçimde saklanır.
 
-Engelsiz Mail, Gmail hesabına bağlanmak için Google uygulama şifresi kullanır. Bu nedenle Google hesabınızda iki adımlı doğrulamanın açık olması ve bu eklenti için bir uygulama şifresi oluşturulması gerekir.
+Eklenti, kullanıcı e-postalarını geliştiriciye veya üçüncü taraf bir sunucuya göndermez.
 
-Ayrıntılı bağlantı, iki adımlı doğrulama ve uygulama şifresi oluşturma adımları için eklenti içindeki yardım kılavuzuna bakınız:
+**Öneri ve Görüş Bildir** bölümü yalnızca kullanıcı formu doldurup gönderdiğinde geliştiriciye e-posta gönderir.
 
-```text
-Engelsiz Mail
-Alt
-Yardım
-Yardım Kılavuzu
-```
-
-## Taslak yönetimi
-
-Engelsiz Mail ile yeni bir e-posta yazarken iletiyi doğrudan taslaklara kaydedebilirsiniz.
-
-Taslaklar klasöründeki bir ileti açıldığında normal okuma penceresi yerine düzenlenebilir taslak penceresi açılır. Bu pencereden taslak düzenlenebilir, gönderilebilir, silinebilir veya yeniden taslaklara kaydedilebilir.
-
-`Esc` tuşuyla çıkarken yazılmış fakat gönderilmemiş bir içerik varsa eklenti, değişikliklerin taslaklara kaydedilip kaydedilmeyeceğini sorar.
-
-## Güvenlik ve gizlilik
-
-Engelsiz Mail, e-posta hesabınıza erişmek için kullandığınız uygulama şifresini düz metin olarak saklamaz. Şifre, Windows DPAPI yöntemiyle yerel kullanıcı hesabınıza bağlı olarak şifrelenir.
-
-Eklenti, posta işlemleri dışında kullanıcı verisini haricî bir sunucuya göndermez. Öneri ve görüş bildirme özelliği kullanıldığında, kullanıcı tarafından yazılan bilgiler kullanıcının bağlı Gmail hesabı üzerinden geliştiriciye e-posta olarak gönderilir.
-
-## Kurulum
-
-1. GitHub Releases bölümünden `.nvda-addon` dosyasını indirin.
-2. Dosyayı çalıştırın.
-3. NVDA kurulum onayını verin.
-4. NVDA yeniden başlatıldığında eklenti kullanılabilir olur.
-
-Eklenti şu yollardan açılabilir:
-
-```text
-Ctrl+Shift+M
-```
-
-veya:
-
-```text
-NVDA menüsü
-Araçlar
-Engelsiz Mail
-```
-
-## Belgeler
-
-Ayrıntılı kullanım kılavuzu eklenti içinde şu dosyada yer alır:
-
-```text
-doc/tr/readme.html
-```
-
-Eklenti içinden erişim:
-
-```text
-Yardım
-Yardım Kılavuzu
-```
+Bu eklenti Google tarafından geliştirilmiş resmî bir Google ürünü değildir. Mehmet Aykurt tarafından NVDA kullanıcılarının erişilebilirlik ihtiyacına yönelik olarak geliştirilmiş bağımsız bir eklentidir.
 
 ## Lisans
 
-Bu eklenti GNU Genel Kamu Lisansı Sürüm 2 kapsamında özgür yazılım olarak yayımlanmıştır.
+Engelsiz Mail, GNU Genel Kamu Lisansı, sürüm 2.0 kapsamında yayımlanır.
 
-Lisans metni için `LICENSE` dosyasına bakınız.
+Kaynak kod, lisans koşullarına uygun biçimde incelenebilir, değiştirilebilir ve paylaşılabilir.
 
-## Geliştirici
+Telif hakkı bildirimi, geliştirici bilgileri ve lisans koşulları korunmalıdır.
 
-```text
-Geliştirici: Mehmet Aykurt
-E-posta: m.aykurt38@gmail.com
-GitHub: https://github.com/MehmetAykurt/engelsiz-mail
-```
+## İletişim
 
-## Not
+- **Geliştirici:** Mehmet Aykurt
+- **E-posta:** m.aykurt38@gmail.com
+- **Resmî web sitesi:** https://mehmetaykurt.com.tr
 
-Bu README dosyası GitHub sayfası için özet tanıtım ve kullanım bilgisi sağlar. Ayrıntılı ve ekran okuyucu odaklı açıklamalar için eklenti içindeki `doc/tr/readme.html` yardım kılavuzu esas alınmalıdır.
+Öneri, görüş, hata bildirimi ve katkılarınızı paylaşabilirsiniz.

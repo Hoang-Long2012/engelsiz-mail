@@ -25,13 +25,20 @@ import socket
 import ssl
 import tempfile
 import threading
+import webbrowser
 import wx
 import ui
 
+try:
+    import versionInfo
+except Exception:
+    versionInfo = None
+
 
 EKLENTI_ADI = "Engelsiz Mail"
-AYARLAR_DOSYASI = os.path.join(globalVars.appArgs.configPath, "engelsizmail_ayarlar.json")
-REHBER_DOSYASI = os.path.join(globalVars.appArgs.configPath, "engelsizmail_rehber.json")
+EKLENTI_SURUMU = "1.3.0"
+AYARLAR_DOSYASI = os.path.join(globalVars.appArgs.configPath, "engelsiz-mail", "ayarlar.json")
+REHBER_DOSYASI = os.path.join(globalVars.appArgs.configPath, "engelsiz-mail", "adres.json")
 
 GMAIL_IMAP_SUNUCU = "imap.gmail.com"
 GMAIL_IMAP_PORT = 993
@@ -41,22 +48,50 @@ BAGLANTI_ZAMAN_ASIMI = 20
 VARSAYILAN_MESAJ_SAYISI = 25
 EN_AZ_MESAJ_SAYISI = 1
 EN_COK_MESAJ_SAYISI = 100
-YENI_ARSIV_SECENEGI = "-- Yeni Bir Arşiv Klasörü Oluştur --"
-HESAP_BILGISI_EKSIK_UYARISI = (
-    "Lütfen önce Google Hesabına Bağlan seçeneğine girerek "
-    "hesap bilgilerinizi kaydedin."
-)
-MENU_BILDIRIM_GECIKMESI_MS = 450
+YENILEME_GECIKMESI_MS = 800
+BAGLANTI_DENETIM_ZAMAN_ASIMI = 10
 SIFRE_DPAPI_ALANI = "sifre_dpapi"
 SIFRE_DUZ_METIN_ALANI = "sifre"
 SIFRE_DPAPI_ON_EK = "dpapi-v1:"
 MESAJ_SAYISI_ALANI = "mesaj_sayisi"
 ONERI_GORUS_ALICI = "m.aykurt38@gmail.com"
+GORUNUM_YAZI_TIPI_ALANI = "gorunum_yazi_tipi"
+GORUNUM_YAZI_BOYUTU_ALANI = "gorunum_yazi_boyutu"
+GORUNUM_YAZI_STILI_ALANI = "gorunum_yazi_stili"
+GORUNUM_METIN_RENGI_ALANI = "gorunum_metin_rengi"
+GORUNUM_ARKA_PLAN_RENGI_ALANI = "gorunum_arka_plan_rengi"
+GORUNUM_YAZI_BOYUTU_EN_AZ = 8
+GORUNUM_YAZI_BOYUTU_EN_COK = 36
+
+GORUNUM_YAZI_STILI_SECENEKLERI = {
+    "Normal": (wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
+    "Kalın": (wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
+    "İtalik": (wx.FONTSTYLE_ITALIC, wx.FONTWEIGHT_NORMAL),
+    "Kalın İtalik": (wx.FONTSTYLE_ITALIC, wx.FONTWEIGHT_BOLD),
+}
+
+GORUNUM_METIN_RENKLERI = {
+    "Siyah": (0, 0, 0),
+    "Beyaz": (255, 255, 255),
+    "Koyu Gri": (64, 64, 64),
+    "Mavi": (0, 0, 255),
+    "Kırmızı": (192, 0, 0),
+    "Yeşil": (0, 128, 0),
+}
+
+GORUNUM_ARKA_PLAN_RENKLERI = {
+    "Beyaz": (255, 255, 255),
+    "Siyah": (0, 0, 0),
+    "Açık Gri": (240, 240, 240),
+    "Koyu Gri": (64, 64, 64),
+    "Açık Sarı": (255, 255, 224),
+    "Açık Mavi": (224, 240, 255),
+}
 
 SISTEM_KLASORLERI = [
     "Gelen Kutusu",
     "Tüm Postalar",
-    "Gönderilmiş Öğeler",
+    "Gönderilen E-postalar",
     "Taslaklar",
     "Çöp Kutusu",
     "Spam",
@@ -65,7 +100,7 @@ SISTEM_KLASORLERI = [
 VARSAYILAN_KLASOR_HARITASI = {
     "Gelen Kutusu": "INBOX",
     "Tüm Postalar": '"[Gmail]/All Mail"',
-    "Gönderilmiş Öğeler": '"[Gmail]/Sent Mail"',
+    "Gönderilen E-postalar": '"[Gmail]/Sent Mail"',
     "Taslaklar": '"[Gmail]/Drafts"',
     "Çöp Kutusu": '"[Gmail]/Trash"',
     "Spam": '"[Gmail]/Spam"',
@@ -172,6 +207,9 @@ class YerelImapIstemcisi:
     def create(self, klasor):
         return self._komut(f"CREATE {klasor}")
 
+    def rename(self, eski_klasor, yeni_klasor):
+        return self._komut(f"RENAME {eski_klasor} {yeni_klasor}")
+
     def expunge(self):
         return self._komut("EXPUNGE")
 
@@ -226,7 +264,7 @@ class ImapBaglantisi:
         self.imap = YerelImapIstemcisi(GMAIL_IMAP_SUNUCU, GMAIL_IMAP_PORT, BAGLANTI_ZAMAN_ASIMI)
         tip, _veri = self.imap.login(eposta, sifre)
         if tip != "OK":
-            raise MailHatasi("Gmail hesabına giriş yapılamadı.")
+            raise MailHatasi("Gmail hesabına giriş yapılamadı. E-posta adresi veya uygulama şifresi hatalı olabilir.")
         return self.imap
 
     def __exit__(self, exc_type, exc, tb):
@@ -275,16 +313,6 @@ def guvenli_call_after(pencere, islev, *args, **kwargs):
 
     wx.CallAfter(calistir)
 
-
-def bildirim_soyle(mesaj, gecikme_ms=0):
-    """NVDA konuşması menü kapanışında kesilmesin diye gerekirse bildirimi geciktirir."""
-    try:
-        if gecikme_ms and gecikme_ms > 0:
-            wx.CallLater(gecikme_ms, ui.message, mesaj)
-        else:
-            ui.message(mesaj)
-    except Exception as e:
-        hata_kaydet("Bildirim verilemedi.", e)
 
 
 def arka_planda_calistir(hedef, *args):
@@ -340,13 +368,13 @@ def mesaj_sayisi_metnini_dogrula(metin):
     """Ayar penceresindeki mesaj sayısı alanını doğrular."""
     metin = str(metin or "").strip()
     if not metin:
-        raise MailHatasi("Listelenecek mesaj sayısı boş bırakılamaz.")
+        raise MailHatasi("Listelenecek e-posta sayısı boş bırakılamaz.")
     try:
         sayi = int(metin)
     except Exception as e:
-        raise MailHatasi("Listelenecek mesaj sayısı yalnızca rakamlardan oluşmalıdır.") from e
+        raise MailHatasi("Listelenecek e-posta sayısı yalnızca rakamlardan oluşmalıdır.") from e
     if sayi < EN_AZ_MESAJ_SAYISI or sayi > EN_COK_MESAJ_SAYISI:
-        raise MailHatasi(f"Listelenecek mesaj sayısı {EN_AZ_MESAJ_SAYISI} ile {EN_COK_MESAJ_SAYISI} arasında olmalıdır.")
+        raise MailHatasi(f"Listelenecek e-posta sayısı {EN_AZ_MESAJ_SAYISI} ile {EN_COK_MESAJ_SAYISI} arasında olmalıdır.")
     return sayi
 
 
@@ -554,6 +582,205 @@ def mesaj_sayisini_kaydet(mesaj_sayisi):
     yeni_ayarlar.pop(SIFRE_DUZ_METIN_ALANI, None)
     return guvenli_json_yaz(AYARLAR_DOSYASI, yeni_ayarlar)
 
+
+
+
+def gorunum_ayarlari_yukle():
+    """Kullanıcının ekrandaki görünüm tercihlerini okur."""
+    ayarlar = guvenli_json_oku(AYARLAR_DOSYASI, {})
+    if not isinstance(ayarlar, dict):
+        ayarlar = {}
+
+    yazi_tipi = str(ayarlar.get(GORUNUM_YAZI_TIPI_ALANI, "") or "").strip()
+
+    try:
+        yazi_boyutu = int(str(ayarlar.get(GORUNUM_YAZI_BOYUTU_ALANI, "0")).strip() or "0")
+    except Exception:
+        yazi_boyutu = 0
+
+    if yazi_boyutu and (yazi_boyutu < GORUNUM_YAZI_BOYUTU_EN_AZ or yazi_boyutu > GORUNUM_YAZI_BOYUTU_EN_COK):
+        yazi_boyutu = 0
+
+    yazi_stili = str(ayarlar.get(GORUNUM_YAZI_STILI_ALANI, "") or "").strip()
+    if yazi_stili not in GORUNUM_YAZI_STILI_SECENEKLERI:
+        yazi_stili = ""
+
+    metin_rengi = str(ayarlar.get(GORUNUM_METIN_RENGI_ALANI, "") or "").strip()
+    if metin_rengi not in GORUNUM_METIN_RENKLERI:
+        metin_rengi = ""
+
+    arka_plan_rengi = str(ayarlar.get(GORUNUM_ARKA_PLAN_RENGI_ALANI, "") or "").strip()
+    if arka_plan_rengi not in GORUNUM_ARKA_PLAN_RENKLERI:
+        arka_plan_rengi = ""
+
+    return {
+        GORUNUM_YAZI_TIPI_ALANI: yazi_tipi,
+        GORUNUM_YAZI_BOYUTU_ALANI: yazi_boyutu,
+        GORUNUM_YAZI_STILI_ALANI: yazi_stili,
+        GORUNUM_METIN_RENGI_ALANI: metin_rengi,
+        GORUNUM_ARKA_PLAN_RENGI_ALANI: arka_plan_rengi,
+    }
+
+
+def gorunum_ayarlari_kaydet(yazi_tipi=None, yazi_boyutu=None, yazi_stili=None, metin_rengi=None, arka_plan_rengi=None):
+    """Görünüm ayarlarını hesap bilgilerine dokunmadan kaydeder."""
+    ayarlar = guvenli_json_oku(AYARLAR_DOSYASI, {})
+    if not isinstance(ayarlar, dict):
+        ayarlar = {}
+
+    yeni_ayarlar = dict(ayarlar)
+    if yazi_tipi is not None:
+        yazi_tipi = str(yazi_tipi or "").strip()
+        if yazi_tipi:
+            yeni_ayarlar[GORUNUM_YAZI_TIPI_ALANI] = yazi_tipi
+        else:
+            yeni_ayarlar.pop(GORUNUM_YAZI_TIPI_ALANI, None)
+
+    if yazi_boyutu is not None:
+        try:
+            yazi_boyutu = int(str(yazi_boyutu).strip())
+        except Exception:
+            raise MailHatasi("Yazı tipi boyutu yalnızca rakamlardan oluşmalıdır.")
+        if yazi_boyutu < GORUNUM_YAZI_BOYUTU_EN_AZ or yazi_boyutu > GORUNUM_YAZI_BOYUTU_EN_COK:
+            raise MailHatasi(f"Yazı tipi boyutu {GORUNUM_YAZI_BOYUTU_EN_AZ} ile {GORUNUM_YAZI_BOYUTU_EN_COK} arasında olmalıdır.")
+        yeni_ayarlar[GORUNUM_YAZI_BOYUTU_ALANI] = yazi_boyutu
+
+    if yazi_stili is not None:
+        yazi_stili = str(yazi_stili or "").strip()
+        if yazi_stili not in GORUNUM_YAZI_STILI_SECENEKLERI:
+            raise MailHatasi("Geçersiz yazı stili seçildi.")
+        yeni_ayarlar[GORUNUM_YAZI_STILI_ALANI] = yazi_stili
+
+    if metin_rengi is not None:
+        metin_rengi = str(metin_rengi or "").strip()
+        if metin_rengi not in GORUNUM_METIN_RENKLERI:
+            raise MailHatasi("Geçersiz metin rengi seçildi.")
+        yeni_ayarlar[GORUNUM_METIN_RENGI_ALANI] = metin_rengi
+
+    if arka_plan_rengi is not None:
+        arka_plan_rengi = str(arka_plan_rengi or "").strip()
+        if arka_plan_rengi not in GORUNUM_ARKA_PLAN_RENKLERI:
+            raise MailHatasi("Geçersiz arka plan rengi seçildi.")
+        yeni_ayarlar[GORUNUM_ARKA_PLAN_RENGI_ALANI] = arka_plan_rengi
+
+    return guvenli_json_yaz(AYARLAR_DOSYASI, yeni_ayarlar)
+
+
+def gorunum_ayarlari_sifirla():
+    """Tüm görünüm ayarlarını varsayılana döndürür."""
+    ayarlar = guvenli_json_oku(AYARLAR_DOSYASI, {})
+    if not isinstance(ayarlar, dict):
+        ayarlar = {}
+    yeni_ayarlar = dict(ayarlar)
+    yeni_ayarlar.pop(GORUNUM_YAZI_TIPI_ALANI, None)
+    yeni_ayarlar.pop(GORUNUM_YAZI_BOYUTU_ALANI, None)
+    yeni_ayarlar.pop(GORUNUM_YAZI_STILI_ALANI, None)
+    yeni_ayarlar.pop(GORUNUM_METIN_RENGI_ALANI, None)
+    yeni_ayarlar.pop(GORUNUM_ARKA_PLAN_RENGI_ALANI, None)
+    return guvenli_json_yaz(AYARLAR_DOSYASI, yeni_ayarlar)
+
+
+def gorunum_fontu_olustur(mevcut_font=None):
+    """Görünüm ayarlarına göre wx.Font üretir. Ayar yoksa mevcut font korunur."""
+    try:
+        ayarlar = gorunum_ayarlari_yukle()
+        yazi_tipi = ayarlar.get(GORUNUM_YAZI_TIPI_ALANI, "")
+        yazi_boyutu = ayarlar.get(GORUNUM_YAZI_BOYUTU_ALANI, 0)
+        yazi_stili = ayarlar.get(GORUNUM_YAZI_STILI_ALANI, "")
+
+        temel_font = mevcut_font
+        if temel_font is None or not temel_font.IsOk():
+            temel_font = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+
+        nokta = yazi_boyutu or temel_font.GetPointSize()
+        if not nokta or nokta <= 0:
+            nokta = 10
+
+        yuz = yazi_tipi or temel_font.GetFaceName()
+        stil = temel_font.GetStyle()
+        agirlik = temel_font.GetWeight()
+        if yazi_stili in GORUNUM_YAZI_STILI_SECENEKLERI:
+            stil, agirlik = GORUNUM_YAZI_STILI_SECENEKLERI[yazi_stili]
+
+        font = wx.Font(
+            int(nokta),
+            wx.FONTFAMILY_DEFAULT,
+            stil,
+            agirlik,
+            temel_font.GetUnderlined(),
+            yuz,
+        )
+        if font.IsOk():
+            return font
+    except Exception as e:
+        hata_kaydet("Görünüm fontu oluşturulamadı.", e)
+    return mevcut_font
+
+
+def gorunum_rengi_olustur(renk_adi, renkler, varsayilan_sistem_rengi):
+    """Hazır renk adını wx.Colour nesnesine çevirir; boşsa sistem rengini döndürür."""
+    try:
+        if renk_adi in renkler:
+            return wx.Colour(*renkler[renk_adi])
+        return wx.SystemSettings.GetColour(varsayilan_sistem_rengi)
+    except Exception as e:
+        hata_kaydet("Görünüm rengi oluşturulamadı.", e)
+        return wx.NullColour
+
+
+def gorunum_renkleri_al():
+    """Metin ve arka plan renklerini döndürür."""
+    ayarlar = gorunum_ayarlari_yukle()
+    metin_rengi = gorunum_rengi_olustur(
+        ayarlar.get(GORUNUM_METIN_RENGI_ALANI, ""),
+        GORUNUM_METIN_RENKLERI,
+        wx.SYS_COLOUR_WINDOWTEXT,
+    )
+    arka_plan_rengi = gorunum_rengi_olustur(
+        ayarlar.get(GORUNUM_ARKA_PLAN_RENGI_ALANI, ""),
+        GORUNUM_ARKA_PLAN_RENKLERI,
+        wx.SYS_COLOUR_WINDOW,
+    )
+    return metin_rengi, arka_plan_rengi
+
+
+def gorunum_denetime_uygula(denetim):
+    """Tek bir wx denetimine kullanıcı görünüm ayarını uygular."""
+    try:
+        if denetim is None:
+            return
+        font = gorunum_fontu_olustur(denetim.GetFont())
+        if font and font.IsOk():
+            denetim.SetFont(font)
+
+        metin_rengi, arka_plan_rengi = gorunum_renkleri_al()
+        if metin_rengi and metin_rengi.IsOk():
+            try:
+                if hasattr(denetim, "SetTextColour"):
+                    denetim.SetTextColour(metin_rengi)
+                else:
+                    denetim.SetForegroundColour(metin_rengi)
+            except Exception:
+                try:
+                    denetim.SetForegroundColour(metin_rengi)
+                except Exception:
+                    pass
+        if arka_plan_rengi and arka_plan_rengi.IsOk():
+            try:
+                denetim.SetBackgroundColour(arka_plan_rengi)
+            except Exception:
+                pass
+        try:
+            denetim.Refresh()
+        except Exception:
+            pass
+    except Exception as e:
+        hata_kaydet("Görünüm ayarı denetime uygulanamadı.", e)
+
+def gorunum_denetimlerine_uygula(*denetimler):
+    """Birden fazla denetime görünüm ayarını güvenli biçimde uygular."""
+    for denetim in denetimler:
+        gorunum_denetime_uygula(denetim)
 
 def rehberi_yukle():
     adresler = guvenli_json_oku(REHBER_DOSYASI, [])
@@ -961,7 +1188,7 @@ def smtp_ssl_ile_gonder(eposta, sifre, alicilar, mesaj):
         sock.sendall(smtp_mesaj_verisini_hazirla(mesaj))
         kod, _metin = smtp_yaniti_oku(dosya)
         if kod != 250:
-            raise MailHatasi("SMTP sunucusu mesajı kabul etmedi.")
+            raise MailHatasi("SMTP sunucusu e-postayı kabul etmedi.")
         try:
             smtp_komut_gonder(sock, dosya, "QUIT", 221)
         except Exception:
@@ -979,13 +1206,261 @@ def smtp_ssl_ile_gonder(eposta, sifre, alicilar, mesaj):
             pass
 
 
+
+def eposta_adresi_gecerli_mi(eposta):
+    """Kullanıcıya ait e-posta adresini temel biçim kurallarına göre denetler."""
+    eposta = str(eposta or "").strip()
+    return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", eposta))
+
+
+def baglanti_hatasi_kullanici_mesaji(hata, varsayilan=None):
+    """Teknik bağlantı hatalarını kullanıcıya anlaşılır Türkçe metinle açıklar."""
+    if isinstance(hata, MailHatasi):
+        return str(hata)
+
+    metin = str(hata or "").lower()
+    if isinstance(hata, socket.gaierror) or "getaddrinfo" in metin or "name or service" in metin:
+        return "Sunucu adı çözümlenemedi. İnternet bağlantınızı, DNS ayarlarınızı veya kurum ağı kısıtlamalarını kontrol edin."
+    if isinstance(hata, socket.timeout) or "timed out" in metin or "zaman" in metin and "aş" in metin:
+        return "Bağlantı zaman aşımına uğradı. İnternet bağlantınız yavaş olabilir veya kurum ağı Gmail sunucularına erişimi engelliyor olabilir."
+    if isinstance(hata, ssl.SSLError) or "ssl" in metin or "certificate" in metin or "sertifika" in metin:
+        return "Güvenli bağlantı kurulamadı. Sertifika denetimi, güvenlik yazılımı veya kurum ağı bağlantıyı etkiliyor olabilir."
+    if isinstance(hata, ConnectionRefusedError) or "refused" in metin:
+        return "Sunucu bağlantıyı reddetti. Güvenlik duvarı, kurum ağı veya geçici sunucu kısıtlaması olabilir."
+    if isinstance(hata, OSError):
+        return varsayilan or "Bağlantı kurulamadı. İnternet bağlantınızı, güvenlik duvarınızı ve kurum ağı ayarlarınızı kontrol edin."
+    return varsayilan or "Beklenmeyen bir bağlantı hatası oluştu. Ayrıntılı denetim için Dosya menüsündeki Bağlantıyı Denetle seçeneğini kullanın."
+
+
+def smtp_kod_bekle(sock, dosya, komut, beklenen_kodlar, hata_mesaji):
+    if isinstance(beklenen_kodlar, int):
+        beklenen_kodlar = (beklenen_kodlar,)
+    if komut is not None:
+        sock.sendall((komut + "\r\n").encode("utf-8"))
+    kod, metin = smtp_yaniti_oku(dosya)
+    if kod not in beklenen_kodlar:
+        raise MailHatasi(f"{hata_mesaji} Sunucu yanıt kodu: {kod}.")
+    return kod, metin
+
+
+def smtp_baglanti_denetle(eposta, sifre):
+    """SMTP sunucusuna bağlanır ve e-posta göndermeden kullanıcı doğrulamasını sınar."""
+    sock = None
+    dosya = None
+    try:
+        ctx = ssl.create_default_context()
+        ham_soket = socket.create_connection((GMAIL_SMTP_SUNUCU, GMAIL_SMTP_PORT), timeout=BAGLANTI_DENETIM_ZAMAN_ASIMI)
+        sock = ctx.wrap_socket(ham_soket, server_hostname=GMAIL_SMTP_SUNUCU)
+        dosya = sock.makefile("rb")
+
+        smtp_kod_bekle(sock, dosya, None, 220, "SMTP sunucusundan beklenen karşılama yanıtı alınamadı.")
+        smtp_kod_bekle(sock, dosya, "EHLO engelsiz-mail", 250, "SMTP sunucusu EHLO komutunu kabul etmedi.")
+        smtp_kod_bekle(sock, dosya, "AUTH LOGIN", 334, "SMTP sunucusu kullanıcı doğrulamasını başlatmadı.")
+        smtp_kod_bekle(sock, dosya, base64.b64encode(eposta.encode("utf-8")).decode("ascii"), 334, "SMTP sunucusu e-posta adresini kabul etmedi.")
+        smtp_kod_bekle(sock, dosya, base64.b64encode(sifre.encode("utf-8")).decode("ascii"), 235, "SMTP kullanıcı doğrulaması başarısız oldu. E-posta adresi veya uygulama şifresi hatalı olabilir.")
+        try:
+            smtp_kod_bekle(sock, dosya, "QUIT", 221, "SMTP çıkış komutu tamamlanamadı.")
+        except Exception:
+            pass
+    finally:
+        try:
+            if dosya:
+                dosya.close()
+        except Exception:
+            pass
+        try:
+            if sock:
+                sock.close()
+        except Exception:
+            pass
+
+
+def ayarlari_denetim_icin_yukle(eposta=None, sifre=None):
+    """Bağlantı denetimi için hesap bilgisini ayrıntılı ve raporlanabilir biçimde okur."""
+    if eposta is not None or sifre is not None:
+        return {
+            "eposta": str(eposta or "").strip(),
+            "sifre": str(sifre or "").strip().replace(" ", ""),
+            "kaynak": "gecici",
+            "ayar_dosyasi_var": os.path.exists(AYARLAR_DOSYASI),
+            "notlar": [],
+        }
+
+    ayar_dosyasi_var = os.path.exists(AYARLAR_DOSYASI)
+    ham_ayarlar = guvenli_json_oku(AYARLAR_DOSYASI, {})
+    if not isinstance(ham_ayarlar, dict):
+        ham_ayarlar = {}
+
+    sonuc = {
+        "eposta": str(ham_ayarlar.get("eposta", "")).strip(),
+        "sifre": "",
+        "kaynak": "kayitli",
+        "ayar_dosyasi_var": ayar_dosyasi_var,
+        "notlar": [],
+    }
+
+    sifreli_deger = str(ham_ayarlar.get(SIFRE_DPAPI_ALANI, "")).strip()
+    duz_metin_sifre = str(ham_ayarlar.get(SIFRE_DUZ_METIN_ALANI, "")).strip().replace(" ", "")
+    if sifreli_deger:
+        sonuc["sifre"] = uygulama_sifresini_coz(sifreli_deger)
+        sonuc["notlar"].append("Kayıtlı uygulama şifresi Windows DPAPI ile çözüldü.")
+    elif duz_metin_sifre:
+        sonuc["sifre"] = duz_metin_sifre
+        sonuc["notlar"].append("Eski düz metin uygulama şifresi alanı bulundu. Hesap yeniden kaydedildiğinde şifreli alana taşınmalıdır.")
+    else:
+        sonuc["notlar"].append("Kayıtlı uygulama şifresi bulunamadı.")
+    return sonuc
+
+
+def imap_klasor_haritasi_olustur(list_sonucu):
+    """IMAP LIST çıktısından sistem ve özel klasörleri tanır."""
+    yeni_harita = dict(VARSAYILAN_KLASOR_HARITASI)
+    ozel_klasorler = []
+    for satir in list_sonucu or []:
+        sonuc = imap_liste_satiri_ayristir(satir)
+        if not sonuc:
+            continue
+        bayraklar, imap_adi, gorunen_ad = sonuc
+        imap_degeri = imap_tirnakli_ham_ad(imap_adi)
+        if "\\SENT" in bayraklar:
+            yeni_harita["Gönderilen E-postalar"] = imap_degeri
+        elif "\\DRAFTS" in bayraklar:
+            yeni_harita["Taslaklar"] = imap_degeri
+        elif "\\TRASH" in bayraklar:
+            yeni_harita["Çöp Kutusu"] = imap_degeri
+        elif "\\JUNK" in bayraklar or "\\SPAM" in bayraklar:
+            yeni_harita["Spam"] = imap_degeri
+        elif "\\ALL" in bayraklar:
+            yeni_harita["Tüm Postalar"] = imap_degeri
+        elif imap_adi.upper() == "INBOX":
+            yeni_harita["Gelen Kutusu"] = "INBOX"
+        elif "\\NOSELECT" not in bayraklar and "[GMAIL]" not in imap_adi.upper():
+            if gorunen_ad not in ozel_klasorler and gorunen_ad not in SISTEM_KLASORLERI:
+                ozel_klasorler.append(gorunen_ad)
+                yeni_harita[gorunen_ad] = imap_degeri
+    return yeni_harita, ozel_klasorler
+
+
+def baglanti_denetimini_yap(eposta=None, sifre=None):
+    """Bağlantı sorunlarını adım adım denetler ve kullanıcıya okunabilir rapor döndürür."""
+    satirlar = []
+    hata_sayisi = 0
+    uyari_sayisi = 0
+
+    def ekle(durum, baslik, aciklama):
+        nonlocal hata_sayisi, uyari_sayisi
+        if durum == "Başarısız":
+            hata_sayisi += 1
+        elif durum == "Uyarı":
+            uyari_sayisi += 1
+        satirlar.append(f"{durum}: {baslik}\n{aciklama}")
+
+    try:
+        hesap = ayarlari_denetim_icin_yukle(eposta, sifre)
+        if hesap["kaynak"] == "kayitli":
+            if hesap["ayar_dosyasi_var"]:
+                ekle("Başarılı", "Ayar dosyası", "Engelsiz Mail ayar dosyası NVDA yapılandırma klasöründe bulundu.")
+            else:
+                ekle("Başarısız", "Ayar dosyası", "Kayıtlı hesap bilgisi bulunamadı. Dosya menüsünden Bağlan seçeneğiyle hesap bilgilerinizi kaydedin.")
+        else:
+            ekle("Başarılı", "Geçici hesap bilgisi", "Bağlan penceresine yazılan e-posta adresi ve uygulama şifresi denetleniyor.")
+    except Exception as e:
+        hata_kaydet("Kayıtlı hesap bilgileri denetim için okunamadı.", e)
+        return False, "Bağlantı denetimi tamamlandı. Sonuç: Sorun bulundu.\n\nAyrıntılar:\nBaşarısız: Kayıtlı hesap bilgisi\n" + baglanti_hatasi_kullanici_mesaji(e)
+
+    eposta = hesap.get("eposta", "")
+    sifre = hesap.get("sifre", "")
+
+    if eposta_adresi_gecerli_mi(eposta):
+        ekle("Başarılı", "E-posta adresi", "Kayıtlı e-posta adresinin biçimi geçerli görünüyor.")
+    else:
+        ekle("Başarısız", "E-posta adresi", "E-posta adresi eksik veya geçersiz görünüyor. Örnek biçim: adiniz@gmail.com")
+
+    if sifre:
+        if len(sifre) < 12:
+            ekle("Uyarı", "Uygulama şifresi", "Uygulama şifresi kısa görünüyor. Gmail uygulama şifreleri genellikle 16 hanelidir.")
+        else:
+            ekle("Başarılı", "Uygulama şifresi", "Uygulama şifresi okunabildi ve denetim için hazırlandı.")
+    else:
+        ekle("Başarısız", "Uygulama şifresi", "Kayıtlı uygulama şifresi okunamadı veya boş. Hesap bilgilerini yeniden kaydetmeniz gerekebilir.")
+
+    for not_satiri in hesap.get("notlar", []):
+        if "düz metin" in not_satiri.lower():
+            ekle("Uyarı", "Şifre saklama biçimi", not_satiri)
+        else:
+            ekle("Başarılı", "Şifre çözme", not_satiri)
+
+    # E-posta veya şifre yoksa ağ denetimine geçmek yanıltıcı sonuç üretebilir.
+    if not eposta or not sifre:
+        sonuc = "Sorun bulundu."
+        rapor = [f"Bağlantı denetimi tamamlandı. Sonuç: {sonuc}", "", "Ayrıntılar:"] + satirlar
+        return False, "\n\n".join(rapor)
+
+    try:
+        test_soket = socket.create_connection((GMAIL_IMAP_SUNUCU, GMAIL_IMAP_PORT), timeout=BAGLANTI_DENETIM_ZAMAN_ASIMI)
+        test_soket.close()
+        ekle("Başarılı", "İnternet ve Gmail IMAP erişimi", f"{GMAIL_IMAP_SUNUCU}:{GMAIL_IMAP_PORT} adresine bağlantı başlatılabildi.")
+    except Exception as e:
+        ekle("Başarısız", "İnternet ve Gmail IMAP erişimi", baglanti_hatasi_kullanici_mesaji(e))
+
+    klasor_haritasi = {}
+    try:
+        imap = YerelImapIstemcisi(GMAIL_IMAP_SUNUCU, GMAIL_IMAP_PORT, BAGLANTI_DENETIM_ZAMAN_ASIMI)
+        try:
+            tip, veri = imap.login(eposta, sifre)
+            if tip != "OK":
+                raise MailHatasi("IMAP kullanıcı doğrulaması başarısız oldu. E-posta adresi veya uygulama şifresi hatalı olabilir.")
+            ekle("Başarılı", "IMAP kullanıcı doğrulaması", "Gmail IMAP sunucusu e-posta adresini ve uygulama şifresini kabul etti.")
+
+            tip, veri = imap.list()
+            if tip != "OK":
+                raise MailHatasi("Gmail klasör listesi alınamadı.")
+            klasor_haritasi, ozel_klasorler = imap_klasor_haritasi_olustur(veri)
+            ekle("Başarılı", "Gmail klasör listesi", f"Klasör listesi okundu. Tanınan özel arşiv klasörü sayısı: {len(ozel_klasorler)}. Sistem klasörleri aşağıda tek tek seçilerek denetlenecek.")
+
+            # Temel klasör seçme denetimi.
+            for ad in SISTEM_KLASORLERI:
+                klasor = klasor_haritasi.get(ad, VARSAYILAN_KLASOR_HARITASI.get(ad, "INBOX"))
+                tip, _ = imap.select(klasor, readonly=True)
+                if tip != "OK":
+                    ekle("Uyarı", f"{ad} klasörü", "Klasör seçilemedi. Gmail hesabınızda bu klasör farklı adla görünüyor olabilir.")
+                else:
+                    ekle("Başarılı", f"{ad} klasörü", "Klasör seçilebildi.")
+        finally:
+            try:
+                imap.logout()
+            except Exception:
+                pass
+    except Exception as e:
+        ekle("Başarısız", "IMAP denetimi", baglanti_hatasi_kullanici_mesaji(e))
+
+    try:
+        smtp_baglanti_denetle(eposta, sifre)
+        ekle("Başarılı", "SMTP kullanıcı doğrulaması", "Gmail SMTP sunucusu e-posta adresini ve uygulama şifresini kabul etti. Denetim sırasında e-posta gönderilmedi.")
+    except Exception as e:
+        ekle("Başarısız", "SMTP denetimi", baglanti_hatasi_kullanici_mesaji(e))
+
+    if hata_sayisi:
+        sonuc = "Sorun bulundu."
+        basarili = False
+    elif uyari_sayisi:
+        sonuc = "Başarılı, ancak uyarı var."
+        basarili = True
+    else:
+        sonuc = "Başarılı."
+        basarili = True
+
+    rapor = [f"Bağlantı denetimi tamamlandı. Sonuç: {sonuc}"]
+    if hata_sayisi:
+        rapor.append("Sorun varsa önce e-posta adresinizi, uygulama şifrenizi, internet bağlantınızı, güvenlik duvarınızı ve kurum ağı kısıtlamalarını kontrol edin.")
+    rapor.extend(["", "Ayrıntılar:"])
+    rapor.extend(satirlar)
+    return basarili, "\n\n".join(rapor)
+
 def yardim_belgesini_ac():
     base_dir = os.path.dirname(os.path.dirname(__file__))
     adaylar = [
         os.path.join(base_dir, "doc", "tr", "readme.html"),
-        os.path.join(base_dir, "doc", "en", "readme.html"),
-        os.path.join(base_dir, "doc", "readme.html"),
-        os.path.join(base_dir, "yardim.html"),
     ]
     for yol in adaylar:
         if os.path.exists(yol):
@@ -999,9 +1474,143 @@ def yardim_belgesini_ac():
     return False
 
 
+def ne_yeni_belgesini_ac():
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    adaylar = [
+        os.path.join(base_dir, "doc", "tr", "ne-yeni.html"),
+    ]
+    for yol in adaylar:
+        if os.path.exists(yol):
+            try:
+                os.startfile(yol)
+                return True
+            except Exception as e:
+                hata_kaydet("Yenilikler dosyası açılamadı.", e)
+                break
+    ui.message("Yenilikler dosyası bulunamadı. Lütfen doc/tr/ne-yeni.html dosyasını kontrol edin.")
+    return False
+
+
+def nvda_surumunu_al():
+    try:
+        if versionInfo is not None:
+            surum = getattr(versionInfo, "version", "")
+            if surum:
+                return str(surum)
+            yil = getattr(versionInfo, "version_year", None)
+            ana = getattr(versionInfo, "version_major", None)
+            alt = getattr(versionInfo, "version_minor", None)
+            yapi = getattr(versionInfo, "version_build", None)
+            parcalar = [str(x) for x in (yil, ana, alt, yapi) if x is not None]
+            if parcalar:
+                return ".".join(parcalar)
+    except Exception as e:
+        hata_kaydet("NVDA sürümü alınamadı.", e)
+    return "Bilinmiyor"
+
+
+def hakkinda_penceresini_ac(parent=None):
+    metin = (
+        f"{EKLENTI_ADI}\n\n"
+        f"Eklenti sürümü: {EKLENTI_SURUMU}\n"
+        f"NVDA sürümü: {nvda_surumunu_al()}\n"
+        "Geliştirici: Mehmet Aykurt\n"
+        "E-posta: m.aykurt38@gmail.com\n"
+        "Lisans: GNU Genel Kamu Lisansı, sürüm 2.0\n\n"
+        "Engelsiz Mail, NVDA ekran okuyucusu kullanıcıları için geliştirilen erişilebilir e-posta eklentisidir."
+    )
+    try:
+        gui.messageBox(
+            metin,
+            f"{EKLENTI_ADI} Hakkında",
+            wx.OK | wx.ICON_INFORMATION,
+            parent,
+        )
+    except TypeError:
+        gui.messageBox(metin, f"{EKLENTI_ADI} Hakkında", wx.OK | wx.ICON_INFORMATION)
+
+
+def uygulama_sifresi_sayfasini_ac():
+    url = "https://myaccount.google.com/apppasswords"
+    try:
+        os.startfile(url)
+        return True
+    except Exception as e:
+        hata_kaydet("Uygulama şifresi sayfası os.startfile ile açılamadı.", e)
+    try:
+        webbrowser.open(url)
+        return True
+    except Exception as e:
+        hata_kaydet("Uygulama şifresi sayfası webbrowser ile açılamadı.", e)
+    ui.message("Uygulama şifresi sayfası açılamadı. Adresi tarayıcınızda açabilirsiniz: https://myaccount.google.com/apppasswords")
+    return False
+
+
+class BaglantiDenetimSonucPenceresi(wx.Dialog):
+    def __init__(self, parent, basarili, rapor):
+        super().__init__(parent, title="Engelsiz Mail - Bağlantı Denetimi")
+        self.rapor = str(rapor or "")
+        self.detay_gosteriliyor = False
+
+        ozet = self.ozet_metni_olustur(bool(basarili), self.rapor)
+
+        duzen = wx.BoxSizer(wx.VERTICAL)
+        duzen.Add(wx.StaticText(self, label="Bağlantı denetimi özeti:"), 0, wx.ALL, 5)
+        self.txt_ozet = wx.TextCtrl(self, value=ozet, style=wx.TE_MULTILINE | wx.TE_READONLY)
+        self.txt_ozet.SetName("Bağlantı denetimi özeti")
+        duzen.Add(self.txt_ozet, 0, wx.ALL | wx.EXPAND, 5)
+
+        self.txt_ayrinti = wx.TextCtrl(self, value=self.rapor, style=wx.TE_MULTILINE | wx.TE_READONLY)
+        self.txt_ayrinti.SetName("Bağlantı denetimi ayrıntıları")
+        duzen.Add(self.txt_ayrinti, 1, wx.ALL | wx.EXPAND, 5)
+        self.txt_ayrinti.Hide()
+        gorunum_denetimlerine_uygula(self.txt_ozet, self.txt_ayrinti)
+
+        btn_duzen = wx.BoxSizer(wx.HORIZONTAL)
+        self.ayrinti_btn = wx.Button(self, label="&Ayrıntıları Görüntüle")
+        self.ayrinti_btn.Bind(wx.EVT_BUTTON, self.ayrintilari_goster)
+        btn_duzen.Add(self.ayrinti_btn, 0, wx.ALL, 5)
+
+        kapat_btn = wx.Button(self, wx.ID_OK, label="&Kapat")
+        btn_duzen.Add(kapat_btn, 0, wx.ALL, 5)
+        duzen.Add(btn_duzen, 0, wx.CENTER | wx.BOTTOM, 5)
+
+        self.SetSizer(duzen)
+        self.SetSize((760, 420))
+        self.CenterOnParent()
+        wx.CallAfter(self.txt_ozet.SetFocus)
+
+    def ozet_metni_olustur(self, basarili, rapor):
+        rapor = rapor or ""
+        rapor_kucuk = rapor.lower()
+        if "tamamlanamadı" in rapor_kucuk or "sonuç: sorun bulundu" in rapor_kucuk:
+            return "Bağlantı denetimi tamamlandı. Sorun algılandı. Ayrıntıları görüntüleyerek sorunun hangi aşamada oluştuğunu inceleyebilirsiniz."
+        if "uyarı var" in rapor_kucuk:
+            return "Bağlantı denetimi tamamlandı. Bağlantınız çalışıyor; ancak uyarı var. Ayrıntıları görüntüleyerek uyarıları inceleyebilirsiniz."
+        if basarili:
+            return "Bağlantı denetimi tamamlandı. Bağlantınız başarılı. Herhangi bir sorun algılanmadı."
+        return "Bağlantı denetimi tamamlandı. Sonuç kesin olarak doğrulanamadı. Ayrıntıları görüntüleyerek denetim adımlarını inceleyebilirsiniz."
+
+    def ayrintilari_goster(self, event):
+        if not self.detay_gosteriliyor:
+            self.detay_gosteriliyor = True
+            self.txt_ayrinti.Show()
+            self.ayrinti_btn.SetLabel("Ayrıntıları &Gizle")
+            self.Layout()
+            self.SetSize((760, 600))
+            wx.CallAfter(self.txt_ayrinti.SetFocus)
+        else:
+            self.detay_gosteriliyor = False
+            self.txt_ayrinti.Hide()
+            self.ayrinti_btn.SetLabel("&Ayrıntıları Görüntüle")
+            self.Layout()
+            self.SetSize((760, 420))
+            wx.CallAfter(self.txt_ozet.SetFocus)
+
+
 class AyarlarPenceresi(wx.Dialog):
     def __init__(self, parent):
-        super().__init__(parent, title="Engelsiz Mail - Google Hesabına Bağlan")
+        super().__init__(parent, title="Engelsiz Mail - Hesaba Bağlan")
         ayarlar = ayarlari_yukle()
         self._baglanti_kontrol_ediliyor = False
 
@@ -1020,7 +1629,11 @@ class AyarlarPenceresi(wx.Dialog):
         self.kaydet_btn.Bind(wx.EVT_BUTTON, self.kaydet_basildi)
         btn_duzen.Add(self.kaydet_btn, 0, wx.ALL, 5)
 
-        yardim_btn = wx.Button(self, label="Uygulama Şifresi İçin &Yardım Belgesi")
+        sifre_olustur_btn = wx.Button(self, label="Şifre &Oluştur")
+        sifre_olustur_btn.Bind(wx.EVT_BUTTON, self.sifre_olustur_basildi)
+        btn_duzen.Add(sifre_olustur_btn, 0, wx.ALL, 5)
+
+        yardim_btn = wx.Button(self, label="Uygulama Şifresi &Yardımı")
         yardim_btn.Bind(wx.EVT_BUTTON, self.yardim_basildi)
         btn_duzen.Add(yardim_btn, 0, wx.ALL, 5)
 
@@ -1032,6 +1645,9 @@ class AyarlarPenceresi(wx.Dialog):
         self.SetSize((650, 275))
         self.CenterOnParent()
         wx.CallAfter(self.txt_eposta.SetFocus)
+
+    def sifre_olustur_basildi(self, event):
+        uygulama_sifresi_sayfasini_ac()
 
     def yardim_basildi(self, event):
         yardim_belgesini_ac()
@@ -1064,7 +1680,7 @@ class AyarlarPenceresi(wx.Dialog):
 
         self._baglanti_kontrol_ediliyor = True
         self.alanlari_etkinlestir(False)
-        ui.message("Bağlantı denetleniyor. Lütfen bekleyiniz.")
+        ui.message("Bağlantı denetleniyor. Lütfen bekleyin.")
         arka_planda_calistir(self._baglantiyi_denetle, eposta, sifre)
 
     def _baglantiyi_denetle(self, eposta, sifre):
@@ -1093,7 +1709,7 @@ class AyarlarPenceresi(wx.Dialog):
         self._baglanti_kontrol_ediliyor = False
         self.alanlari_etkinlestir(True)
         gui.messageBox(
-            "Gmail hesabına bağlanılamadı. Lütfen e-posta adresinizi, Google uygulama şifrenizi ve internet bağlantınızı kontrol edin.",
+            "Gmail hesabına bağlanılamadı. Lütfen e-posta adresinizi, Google uygulama şifrenizi ve internet bağlantınızı kontrol edin. Ayrıntılı denetim için Dosya menüsündeki Bağlantıyı Denetle seçeneğini kullanabilirsiniz.",
             "Bağlantı Başarısız",
             wx.OK | wx.ICON_WARNING,
         )
@@ -1102,11 +1718,11 @@ class AyarlarPenceresi(wx.Dialog):
 
 class MesajSayisiPenceresi(wx.Dialog):
     def __init__(self, parent):
-        super().__init__(parent, title="Engelsiz Mail - E-Posta Sayısı")
+        super().__init__(parent, title="Engelsiz Mail - E-posta Sayısı")
         ayarlar = ayarlari_yukle()
 
         duzen = wx.BoxSizer(wx.VERTICAL)
-        bilgi = f"Listelenecek e-posta sayısı ({EN_AZ_MESAJ_SAYISI} ile {EN_COK_MESAJ_SAYISI} arası):"
+        bilgi = f"Listelenecek e-posta sayısı ({EN_AZ_MESAJ_SAYISI} ile {EN_COK_MESAJ_SAYISI} arasında):"
         duzen.Add(wx.StaticText(self, label="&" + bilgi), 0, wx.ALL, 5)
         self.txt_mesaj_sayisi = wx.TextCtrl(
             self,
@@ -1153,8 +1769,8 @@ class OneriGorusPenceresi(wx.Dialog):
         duzen = wx.BoxSizer(wx.VERTICAL)
         bilgi = (
             "İletişim Formu\n"
-            "Her türlü öneri, görüş ve düşünceleriniz için bize yazın.\n"
-            "Mesajınız değerlendirilip, en kısa süre içerisinde tarafınıza geri dönüş sağlanacaktır."
+            "Her türlü öneri, görüş ve düşünceniz için bize yazın.\n"
+            "Bildiriminiz değerlendirilecek ve en kısa süre içinde size dönüş yapılacaktır."
         )
         duzen.Add(wx.StaticText(self, label=bilgi), 0, wx.ALL | wx.EXPAND, 5)
 
@@ -1170,7 +1786,7 @@ class OneriGorusPenceresi(wx.Dialog):
         duzen.Add(
             wx.StaticText(
                 self,
-                label="Lütfen e-posta adresinizi doğru yazdığınızdan emin olunuz."
+                label="Lütfen e-posta adresinizi doğru yazdığınızdan emin olun."
             ),
             0,
             wx.LEFT | wx.RIGHT | wx.TOP,
@@ -1183,7 +1799,7 @@ class OneriGorusPenceresi(wx.Dialog):
         duzen.Add(
             wx.StaticText(
                 self,
-                label="Mesajınızın konusu"
+                label="Bildiriminizin konusu"
             ),
             0,
             wx.LEFT | wx.RIGHT | wx.TOP,
@@ -1192,11 +1808,11 @@ class OneriGorusPenceresi(wx.Dialog):
         self.txt_konu = wx.TextCtrl(self)
         duzen.Add(self.txt_konu, 0, wx.ALL | wx.EXPAND, 5)
 
-        duzen.Add(wx.StaticText(self, label="&Mesaj:"), 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        duzen.Add(wx.StaticText(self, label="&Bildirim metni:"), 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
         duzen.Add(
             wx.StaticText(
                 self,
-                label="Mesajınız"
+                label="Bildirim metniniz"
             ),
             0,
             wx.LEFT | wx.RIGHT | wx.TOP,
@@ -1265,7 +1881,7 @@ class OneriGorusPenceresi(wx.Dialog):
             raise MailHatasi("Lütfen konu alanını doldurun.")
         if not veri["mesaj"]:
             self.txt_mesaj.SetFocus()
-            raise MailHatasi("Lütfen mesaj alanını doldurun.")
+            raise MailHatasi("Lütfen bildirim metni alanını doldurun.")
 
     def gonder_tiklandi(self, event=None):
         if self._gonderiliyor:
@@ -1303,7 +1919,7 @@ class OneriGorusPenceresi(wx.Dialog):
                 "Eklenti: Engelsiz Mail\n"
                 f"Gönderen Gmail hesabı: {ayarlar.get('eposta', '')}\n"
                 f"Konu: {konu}\n\n"
-                "Mesaj:\n"
+                "Bildirim metni:\n"
                 f"{veri.get('mesaj', '')}\n"
             )
             mesaj = eposta_mesaji_olustur(
@@ -1434,7 +2050,7 @@ def taslagi_sunucuya_kaydet(kime, konu, icerik, ek_kayitlari, yanit_basliklari=N
                 hata_kaydet(son_hata, e)
                 continue
 
-    raise MailHatasi("Taslak Gmail Taslaklar klasörüne kaydedilemedi.")
+    raise MailHatasi("Taslak, Gmail'in Taslaklar klasörüne kaydedilemedi.")
 
 
 class YeniPostaPenceresi(wx.Dialog):
@@ -1445,7 +2061,7 @@ class YeniPostaPenceresi(wx.Dialog):
         varsayilan_konu="",
         varsayilan_icerik="",
         yanit_basliklari=None,
-        baslik="Engelsiz Mail - Posta Yaz",
+        baslik="Engelsiz Mail - E-posta Yaz",
         gonderildi_callback=None,
         taslak_sil_callback=None,
         taslak_kaydet_callback=None,
@@ -1481,7 +2097,7 @@ class YeniPostaPenceresi(wx.Dialog):
         konu_duzen.Add(self.txt_konu, 1, wx.ALL | wx.EXPAND, 5)
         self.ana_duzen.Add(konu_duzen, 0, wx.EXPAND)
 
-        self.ana_duzen.Add(wx.StaticText(self, label="&Mesajınız:"), 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
+        self.ana_duzen.Add(wx.StaticText(self, label="&E-posta metni:"), 0, wx.LEFT | wx.RIGHT | wx.TOP, 5)
         self.txt_icerik = wx.TextCtrl(self, value=varsayilan_icerik, style=wx.TE_MULTILINE | wx.TE_RICH2)
         self.ana_duzen.Add(self.txt_icerik, 1, wx.ALL | wx.EXPAND, 5)
 
@@ -1490,6 +2106,12 @@ class YeniPostaPenceresi(wx.Dialog):
         self.liste_ekler = wx.ListBox(self, style=wx.LB_SINGLE, size=(-1, 60))
         ek_duzen.Add(self.liste_ekler, 1, wx.ALL | wx.EXPAND, 5)
         self.ana_duzen.Add(ek_duzen, 0, wx.EXPAND)
+        gorunum_denetimlerine_uygula(
+            self.txt_kime,
+            self.txt_konu,
+            self.txt_icerik,
+            self.liste_ekler,
+        )
 
         for dosya_adi, veri in hazir_ekler or []:
             if veri:
@@ -1796,19 +2418,15 @@ class ArsivSecimPenceresi(wx.Dialog):
         duzen = wx.BoxSizer(wx.VERTICAL)
         duzen.Add(wx.StaticText(self, label="&Hedef arşivi seçin:"), 0, wx.ALL, 5)
 
-        secenekler = [YENI_ARSIV_SECENEGI] + list(ozel_klasorler)
-        self.liste_kutu = wx.ListBox(self, choices=secenekler, style=wx.LB_SINGLE)
-        self.liste_kutu.SetSelection(0)
+        self.liste_kutu = wx.ListBox(self, choices=list(ozel_klasorler), style=wx.LB_SINGLE)
+        if self.liste_kutu.GetCount() > 0:
+            self.liste_kutu.SetSelection(0)
         duzen.Add(self.liste_kutu, 1, wx.ALL | wx.EXPAND, 5)
 
         btn_duzen = wx.BoxSizer(wx.HORIZONTAL)
-        tamam_btn = wx.Button(self, label="&Tamam")
-        tamam_btn.Bind(wx.EVT_BUTTON, self.tamam_basildi)
-        btn_duzen.Add(tamam_btn, 0, wx.ALL, 5)
-
-        sil_btn = wx.Button(self, label="Seçili arşiv klasörünü s&il")
-        sil_btn.Bind(wx.EVT_BUTTON, self.sil_basildi)
-        btn_duzen.Add(sil_btn, 0, wx.ALL, 5)
+        self.tasi_btn = wx.Button(self, label="&Taşı")
+        self.tasi_btn.Bind(wx.EVT_BUTTON, self.tamam_basildi)
+        btn_duzen.Add(self.tasi_btn, 0, wx.ALL, 5)
 
         iptal_btn = wx.Button(self, wx.ID_CANCEL, label="İ&ptal")
         btn_duzen.Add(iptal_btn, 0, wx.ALL, 5)
@@ -1821,28 +2439,12 @@ class ArsivSecimPenceresi(wx.Dialog):
 
     def tamam_basildi(self, event):
         secim = self.liste_kutu.GetSelection()
-        if secim != wx.NOT_FOUND:
-            self.secilen_isim = self.liste_kutu.GetString(secim)
-            self.EndModal(wx.ID_OK)
-
-    def sil_basildi(self, event):
-        secim = self.liste_kutu.GetSelection()
         if secim == wx.NOT_FOUND:
-            ui.message("Lütfen silmek istediğiniz arşivi seçin.")
-            return
-        isim = self.liste_kutu.GetString(secim)
-        if isim == YENI_ARSIV_SECENEGI:
-            ui.message("Bu seçenek silinemez.")
+            ui.message("Lütfen hedef arşiv klasörünü seçin. Arşiv yoksa Düzen menüsünden Arşiv Klasörlerini Yönet seçeneğiyle yeni arşiv oluşturun.")
             self.liste_kutu.SetFocus()
             return
-        cevap = gui.messageBox(
-            f"'{isim}' adlı arşiv klasörünü silmek istiyor musunuz?",
-            "Arşiv Silme Onayı",
-            wx.YES_NO | wx.ICON_WARNING,
-        )
-        if cevap == wx.YES:
-            self.ebeveyn.arsiv_klasoru_sil(isim)
-            self.EndModal(wx.ID_CANCEL)
+        self.secilen_isim = self.liste_kutu.GetString(secim)
+        self.EndModal(wx.ID_OK)
 
 
 class YeniKlasorPenceresi(wx.Dialog):
@@ -1879,9 +2481,107 @@ class YeniKlasorPenceresi(wx.Dialog):
         self.EndModal(wx.ID_OK)
 
 
+class ArsivYonetimPenceresi(wx.Dialog):
+    def __init__(self, parent, ozel_klasorler, ebeveyn_pencere):
+        super().__init__(parent, title="Engelsiz Mail - Arşiv Klasörlerini Yönet")
+        self.ebeveyn = ebeveyn_pencere
+
+        duzen = wx.BoxSizer(wx.VERTICAL)
+        duzen.Add(wx.StaticText(self, label="&Arşiv klasörleri:"), 0, wx.ALL, 5)
+
+        self.liste_kutu = wx.ListBox(self, choices=list(ozel_klasorler), style=wx.LB_SINGLE)
+        if self.liste_kutu.GetCount() > 0:
+            self.liste_kutu.SetSelection(0)
+        duzen.Add(self.liste_kutu, 1, wx.ALL | wx.EXPAND, 5)
+
+        btn_duzen = wx.BoxSizer(wx.HORIZONTAL)
+
+        yeni_btn = wx.Button(self, label="&Yeni Oluştur")
+        yeni_btn.Bind(wx.EVT_BUTTON, self.yeni_olustur_basildi)
+        btn_duzen.Add(yeni_btn, 0, wx.ALL, 5)
+
+        yeniden_btn = wx.Button(self, label="Yeniden &Adlandır")
+        yeniden_btn.Bind(wx.EVT_BUTTON, self.yeniden_adlandir_basildi)
+        btn_duzen.Add(yeniden_btn, 0, wx.ALL, 5)
+
+        sil_btn = wx.Button(self, label="&Sil")
+        sil_btn.Bind(wx.EVT_BUTTON, self.sil_basildi)
+        btn_duzen.Add(sil_btn, 0, wx.ALL, 5)
+
+        kapat_btn = wx.Button(self, wx.ID_CANCEL, label="&Kapat")
+        btn_duzen.Add(kapat_btn, 0, wx.ALL, 5)
+
+        duzen.Add(btn_duzen, 0, wx.CENTER)
+        self.SetSizer(duzen)
+        self.SetSize((620, 340))
+        self.CenterOnParent()
+        wx.CallAfter(self.liste_kutu.SetFocus)
+
+    def secili_arsiv_adi(self):
+        secim = self.liste_kutu.GetSelection()
+        if secim == wx.NOT_FOUND:
+            return ""
+        return self.liste_kutu.GetString(secim)
+
+    def yeni_olustur_basildi(self, event):
+        dlg = YeniKlasorPenceresi(self)
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            isim = dlg.klasor_adi
+        finally:
+            dlg.Destroy()
+        if isim:
+            self.ebeveyn.arsiv_klasoru_olustur(isim)
+            self.EndModal(wx.ID_OK)
+
+    def yeniden_adlandir_basildi(self, event):
+        eski_isim = self.secili_arsiv_adi()
+        if not eski_isim:
+            ui.message("Lütfen yeniden adlandırmak istediğiniz arşivi seçin.")
+            self.liste_kutu.SetFocus()
+            return
+
+        dlg = wx.TextEntryDialog(
+            self,
+            "Yeni arşiv klasörü adını yazın:",
+            "Arşiv Klasörünü Yeniden Adlandır",
+            eski_isim,
+        )
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            yeni_isim = dlg.GetValue().strip()
+        finally:
+            dlg.Destroy()
+
+        if not yeni_isim:
+            ui.message("Yeni arşiv adı boş olamaz.")
+            self.liste_kutu.SetFocus()
+            return
+        self.ebeveyn.arsiv_klasoru_yeniden_adlandir(eski_isim, yeni_isim)
+        self.EndModal(wx.ID_OK)
+
+    def sil_basildi(self, event):
+        isim = self.secili_arsiv_adi()
+        if not isim:
+            ui.message("Lütfen silmek istediğiniz arşivi seçin.")
+            self.liste_kutu.SetFocus()
+            return
+        cevap = gui.messageBox(
+            f"'{isim}' adlı arşiv klasörünü silmek istiyor musunuz?",
+            "Arşiv Silme Onayı",
+            wx.YES_NO | wx.ICON_WARNING,
+            self,
+        )
+        if cevap == wx.YES:
+            self.ebeveyn.arsiv_klasoru_sil(isim)
+            self.EndModal(wx.ID_OK)
+
+
 class MesajOkumaPenceresi(wx.Dialog):
     def __init__(self, parent, mesaj_verisi, ebeveyn_pencere):
-        super().__init__(parent, title="Engelsiz Mail - Mesaj Görüntüleme")
+        super().__init__(parent, title="Engelsiz Mail - E-posta Görüntüleme")
         self.mesaj_verisi = mesaj_verisi
         self.ebeveyn = ebeveyn_pencere
         self._kapatildi = False
@@ -1890,7 +2590,7 @@ class MesajOkumaPenceresi(wx.Dialog):
 
         duzen = wx.BoxSizer(wx.VERTICAL)
         ek_sayisi = len(mesaj_verisi.get("ekler", []))
-        ek_notu = f"\nBu mesajda {ek_sayisi} ek dosya var.\n" if ek_sayisi else ""
+        ek_notu = f"\nBu e-postada {ek_sayisi} ek dosya var.\n" if ek_sayisi else ""
         icerik = (
             f"Kimden: {mesaj_verisi.get('kimden_tam', '')}\n"
             f"Tarih: {mesaj_verisi.get('tarih', '')}\n"
@@ -1900,6 +2600,7 @@ class MesajOkumaPenceresi(wx.Dialog):
         )
         self.txt_icerik = wx.TextCtrl(self, value=icerik, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2)
         duzen.Add(self.txt_icerik, 1, wx.ALL | wx.EXPAND, 10)
+        gorunum_denetime_uygula(self.txt_icerik)
 
         btn_duzen = wx.BoxSizer(wx.HORIZONTAL)
         if ek_sayisi:
@@ -1946,7 +2647,7 @@ class MesajOkumaPenceresi(wx.Dialog):
 
     def ekleri_kaydet(self, event):
         konu = guvenli_dosya_adi(self.mesaj_verisi.get("konu", "Konusuz"), "Konusuz")
-        hedef_klasor = os.path.join(os.path.expanduser("~"), "Downloads", f"Mail_Ekleri_{konu}")
+        hedef_klasor = os.path.join(os.path.expanduser("~"), "Downloads", f"E-posta_Ekleri_{konu}")
         try:
             os.makedirs(hedef_klasor, exist_ok=True)
             kaydedilen = 0
@@ -1971,7 +2672,7 @@ class MesajOkumaPenceresi(wx.Dialog):
         konu = self.mesaj_verisi.get("konu", "")
         if not konu.lower().startswith("re:"):
             konu = "Re: " + konu
-        icerik = f"\n\n\n--- Orijinal Mesaj ---\n{self.mesaj_verisi.get('icerik', '')}"
+        icerik = f"\n\n\n--- Orijinal E-posta ---\n{self.mesaj_verisi.get('icerik', '')}"
         pencere = YeniPostaPenceresi(
             self,
             varsayilan_kime=kime,
@@ -1990,7 +2691,7 @@ class MesajOkumaPenceresi(wx.Dialog):
         konu = self.mesaj_verisi.get("konu", "")
         if not konu.lower().startswith("fwd:"):
             konu = "Fwd: " + konu
-        icerik = f"\n\n\n--- İletilen Mesaj ---\n{self.mesaj_verisi.get('icerik', '')}"
+        icerik = f"\n\n\n--- İletilen E-posta ---\n{self.mesaj_verisi.get('icerik', '')}"
         pencere = YeniPostaPenceresi(
             self,
             varsayilan_kime="",
@@ -2017,6 +2718,7 @@ class MesajOkumaPenceresi(wx.Dialog):
         if self.ebeveyn.tek_mesaj_sil(
             self.mesaj_verisi["id"],
             self.mesaj_verisi.get("klasor"),
+            self.mesaj_verisi.get("konu"),
         ):
             self.EndModal(wx.ID_OK)
 
@@ -2039,31 +2741,56 @@ class GelenKutusuPenceresi(wx.Frame):
         self._yenileme_hedef_indeks = None
         self._yenileme_sessiz = False
         self._kapatildi = False
+        self._baglanti_denetleniyor = False
         self.Bind(wx.EVT_WINDOW_DESTROY, self._pencere_yok_ediliyor)
 
+        self.id_ac = wx.NewId()
         self.id_hesap_baglan = wx.NewId()
+        self.id_hesap_sil = wx.NewId()
+        self.id_baglanti_denetle = wx.NewId()
         self.id_yeni = wx.NewId()
         self.id_cikis = wx.NewId()
         self.id_tumunu = wx.NewId()
         self.id_kaldir = wx.NewId()
         self.id_arsiv = wx.NewId()
+        self.id_arsiv_yonet = wx.NewId()
         self.id_sil = wx.NewId()
         self.id_yenile = wx.NewId()
         self.id_eposta_sayisi = wx.NewId()
+        self.id_yazi_tipi = wx.NewId()
+        self.id_yazi_boyutu = wx.NewId()
+        self.id_yazi_stili = wx.NewId()
+        self.id_metin_rengi = wx.NewId()
+        self.id_arka_plan_rengi = wx.NewId()
+        self.id_gorunum_sifirla = wx.NewId()
         self.id_yardim_kilavuzu = wx.NewId()
+        self.id_ne_yeni = wx.NewId()
+        self.id_hakkinda = wx.NewId()
         self.id_oneri_gorus = wx.NewId()
 
+        self.Bind(wx.EVT_MENU, self.secili_epostayi_ac, id=self.id_ac)
         self.Bind(wx.EVT_MENU, self.hesap_baglan, id=self.id_hesap_baglan)
+        self.Bind(wx.EVT_MENU, self.hesap_bilgilerini_sil, id=self.id_hesap_sil)
+        self.Bind(wx.EVT_MENU, self.baglantiyi_denetle_menu, id=self.id_baglanti_denetle)
         self.Bind(wx.EVT_MENU, self.yeni_posta_yaz, id=self.id_yeni)
         self.Bind(wx.EVT_MENU, self.pencereyi_kapat, id=self.id_cikis)
         self.Bind(wx.EVT_CLOSE, self.pencereyi_kapat)
         self.Bind(wx.EVT_MENU, self.tumunu_isaretle, id=self.id_tumunu)
         self.Bind(wx.EVT_MENU, self.isaretleri_kaldir, id=self.id_kaldir)
         self.Bind(wx.EVT_MENU, self.arsive_gonder_menu, id=self.id_arsiv)
+        self.Bind(wx.EVT_MENU, self.arsiv_klasorlerini_yonet, id=self.id_arsiv_yonet)
         self.Bind(wx.EVT_MENU, self.posta_sil, id=self.id_sil)
         self.Bind(wx.EVT_MENU, self.listeyi_yenile, id=self.id_yenile)
+        self.Bind(wx.EVT_MENU, self.yazi_tipi_sec, id=self.id_yazi_tipi)
+        self.Bind(wx.EVT_MENU, self.yazi_boyutu_sec, id=self.id_yazi_boyutu)
+        self.Bind(wx.EVT_MENU, self.yazi_stili_sec, id=self.id_yazi_stili)
+        self.Bind(wx.EVT_MENU, self.metin_rengi_sec, id=self.id_metin_rengi)
+        self.Bind(wx.EVT_MENU, self.arka_plan_rengi_sec, id=self.id_arka_plan_rengi)
+        self.Bind(wx.EVT_MENU, self.gorunumu_varsayilana_dondur, id=self.id_gorunum_sifirla)
         self.Bind(wx.EVT_MENU, self.eposta_sayisi_ayari_ac, id=self.id_eposta_sayisi)
         self.Bind(wx.EVT_MENU, self.yardim_kilavuzunu_ac, id=self.id_yardim_kilavuzu)
+        self.Bind(wx.EVT_MENU, self.ne_yeni_ac, id=self.id_ne_yeni)
+        self.Bind(wx.EVT_MENU, self.hakkinda_ac, id=self.id_hakkinda)
         self.Bind(wx.EVT_MENU, self.oneri_gorus_ac, id=self.id_oneri_gorus)
 
         self.menuleri_olustur()
@@ -2104,7 +2831,9 @@ class GelenKutusuPenceresi(wx.Frame):
         self.liste.Bind(wx.EVT_KEY_DOWN, self.tusa_basildi)
         self.liste.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.mesaj_oku)
         self.liste.Bind(wx.EVT_CONTEXT_MENU, self.sag_tik_menusu)
+        self.liste.Bind(wx.EVT_LIST_ITEM_RIGHT_CLICK, self.sag_tik_menusu)
         self.ana_duzen.Add(self.liste, 1, wx.ALL | wx.EXPAND, 5)
+        self.gorunum_uygula()
 
 
         self.ana_panel.SetSizer(self.ana_duzen)
@@ -2121,10 +2850,13 @@ class GelenKutusuPenceresi(wx.Frame):
         menu_bar = wx.MenuBar()
 
         dosya_menu = wx.Menu()
-        dosya_menu.Append(self.id_hesap_baglan, "&Bağlan...")
-        dosya_menu.Append(self.id_yeni, "&Yeni Posta Yaz\tAlt+N")
+        dosya_menu.Append(self.id_yeni, "&Yeni E-posta Yaz	Alt+N")
         dosya_menu.AppendSeparator()
-        dosya_menu.Append(self.id_cikis, "&Çıkış\tAlt+F4")
+        dosya_menu.Append(self.id_hesap_baglan, "&Bağlan...")
+        dosya_menu.Append(self.id_baglanti_denetle, "Bağlantıyı &Denetle...")
+        dosya_menu.Append(self.id_hesap_sil, "Hesap Bilgilerini &Sil")
+        dosya_menu.AppendSeparator()
+        dosya_menu.Append(self.id_cikis, "&Çıkış	Alt+F4")
         menu_bar.Append(dosya_menu, "D&osya")
 
         duzen_menu = wx.Menu()
@@ -2132,22 +2864,216 @@ class GelenKutusuPenceresi(wx.Frame):
         duzen_menu.Append(self.id_kaldir, "İşaretleri &Kaldır\tAlt+D")
         duzen_menu.AppendSeparator()
         duzen_menu.Append(self.id_arsiv, "A&rşive Gönder\tAlt+R")
+        duzen_menu.Append(self.id_arsiv_yonet, "Arşiv Klasörlerini &Yönet...")
         duzen_menu.Append(self.id_sil, "&Sil\tAlt+S")
         duzen_menu.AppendSeparator()
         duzen_menu.Append(self.id_yenile, "&Yenile\tF5")
         menu_bar.Append(duzen_menu, "Dü&zen")
 
+        gorunum_menu = wx.Menu()
+        gorunum_menu.Append(self.id_yazi_tipi, "&Yazı Tipi...")
+        gorunum_menu.Append(self.id_yazi_boyutu, "Yazı Tipi &Boyutu...")
+        gorunum_menu.Append(self.id_yazi_stili, "Yazı &Stili...")
+        gorunum_menu.AppendSeparator()
+        gorunum_menu.Append(self.id_metin_rengi, "&Metin Rengi...")
+        gorunum_menu.Append(self.id_arka_plan_rengi, "&Arka Plan Rengi...")
+        gorunum_menu.AppendSeparator()
+        gorunum_menu.Append(self.id_gorunum_sifirla, "&Varsayılan Görünüme Dön")
+        menu_bar.Append(gorunum_menu, "&Görünüm")
+
         ayarlar_menu = wx.Menu()
-        ayarlar_menu.Append(self.id_eposta_sayisi, "&E-Posta Sayısı...")
+        ayarlar_menu.Append(self.id_eposta_sayisi, "&E-posta Sayısı...")
         menu_bar.Append(ayarlar_menu, "Ayar&lar")
 
         yardim_menu = wx.Menu()
         yardim_menu.Append(self.id_yardim_kilavuzu, "&Yardım Kılavuzu")
+        yardim_menu.Append(self.id_ne_yeni, "&Yenilikler")
+        yardim_menu.Append(self.id_hakkinda, "&Hakkında")
         yardim_menu.AppendSeparator()
         yardim_menu.Append(self.id_oneri_gorus, "Ö&neri ve Görüş Bildir...")
         menu_bar.Append(yardim_menu, "&Yardım")
 
         self.SetMenuBar(menu_bar)
+
+    def gorunum_uygula(self):
+        """Ana pencere denetimlerine görünüm ayarlarını uygular."""
+        gorunum_denetimlerine_uygula(self.k_kutu, self.liste)
+        try:
+            self.ana_panel.Layout()
+            self.Layout()
+        except Exception:
+            pass
+
+    def yazi_tipi_sec(self, event=None):
+        mevcut_ayar = gorunum_ayarlari_yukle()
+        mevcut_yazi_tipi = mevcut_ayar.get(GORUNUM_YAZI_TIPI_ALANI, "")
+        if not mevcut_yazi_tipi:
+            try:
+                mevcut_yazi_tipi = self.liste.GetFont().GetFaceName()
+            except Exception:
+                mevcut_yazi_tipi = ""
+
+        try:
+            fontlar = sorted(set(wx.FontEnumerator.GetFacenames()), key=lambda x: x.lower())
+        except Exception:
+            fontlar = []
+        if not fontlar:
+            fontlar = ["Arial", "Calibri", "Courier New", "Tahoma", "Times New Roman", "Verdana"]
+        if mevcut_yazi_tipi and mevcut_yazi_tipi not in fontlar:
+            fontlar.insert(0, mevcut_yazi_tipi)
+
+        dlg = wx.SingleChoiceDialog(
+            self,
+            "Yazı tipini seçin:",
+            "Yazı Tipi",
+            fontlar,
+        )
+        try:
+            if mevcut_yazi_tipi in fontlar:
+                dlg.SetSelection(fontlar.index(mevcut_yazi_tipi))
+            if dlg.ShowModal() != wx.ID_OK:
+                self.liste.SetFocus()
+                return
+            yazi_tipi = dlg.GetStringSelection().strip()
+            if not yazi_tipi:
+                ui.message("Yazı tipi seçilemedi.")
+                self.liste.SetFocus()
+                return
+            gorunum_ayarlari_kaydet(yazi_tipi=yazi_tipi)
+            self.gorunum_uygula()
+            ui.message(f"Yazı tipi {yazi_tipi} olarak ayarlandı.")
+        except MailHatasi as e:
+            ui.message(str(e))
+        except Exception as e:
+            hata_kaydet("Yazı tipi seçilemedi.", e)
+            ui.message("Yazı tipi seçilemedi.")
+        finally:
+            dlg.Destroy()
+            wx.CallAfter(self.liste.SetFocus)
+
+    def yazi_boyutu_sec(self, event=None):
+        mevcut = gorunum_ayarlari_yukle().get(GORUNUM_YAZI_BOYUTU_ALANI, 0)
+        if not mevcut:
+            try:
+                mevcut = self.liste.GetFont().GetPointSize()
+            except Exception:
+                mevcut = 10
+        dlg = wx.TextEntryDialog(
+            self,
+            f"Yazı tipi boyutunu {GORUNUM_YAZI_BOYUTU_EN_AZ} ile {GORUNUM_YAZI_BOYUTU_EN_COK} arasında yazın:",
+            "Yazı Tipi Boyutu",
+            str(mevcut or 10),
+        )
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                self.liste.SetFocus()
+                return
+            yazi_boyutu = int(str(dlg.GetValue()).strip())
+            gorunum_ayarlari_kaydet(yazi_boyutu=yazi_boyutu)
+            self.gorunum_uygula()
+            ui.message(f"Yazı tipi boyutu {yazi_boyutu} olarak ayarlandı.")
+        except ValueError:
+            ui.message("Yazı tipi boyutu yalnızca rakamlardan oluşmalıdır.")
+        except MailHatasi as e:
+            ui.message(str(e))
+        except Exception as e:
+            hata_kaydet("Yazı tipi boyutu ayarlanamadı.", e)
+            ui.message("Yazı tipi boyutu ayarlanamadı.")
+        finally:
+            dlg.Destroy()
+            wx.CallAfter(self.liste.SetFocus)
+
+    def yazi_stili_sec(self, event=None):
+        secenekler = list(GORUNUM_YAZI_STILI_SECENEKLERI.keys())
+        mevcut = gorunum_ayarlari_yukle().get(GORUNUM_YAZI_STILI_ALANI, "") or "Normal"
+        dlg = wx.SingleChoiceDialog(
+            self,
+            "Yazı stilini seçin:",
+            "Yazı Stili",
+            secenekler,
+        )
+        try:
+            if mevcut in secenekler:
+                dlg.SetSelection(secenekler.index(mevcut))
+            if dlg.ShowModal() != wx.ID_OK:
+                self.liste.SetFocus()
+                return
+            yazi_stili = dlg.GetStringSelection().strip()
+            gorunum_ayarlari_kaydet(yazi_stili=yazi_stili)
+            self.gorunum_uygula()
+            ui.message(f"Yazı stili {yazi_stili} olarak ayarlandı.")
+        except MailHatasi as e:
+            ui.message(str(e))
+        except Exception as e:
+            hata_kaydet("Yazı stili ayarlanamadı.", e)
+            ui.message("Yazı stili ayarlanamadı.")
+        finally:
+            dlg.Destroy()
+            wx.CallAfter(self.liste.SetFocus)
+
+    def metin_rengi_sec(self, event=None):
+        secenekler = list(GORUNUM_METIN_RENKLERI.keys())
+        mevcut = gorunum_ayarlari_yukle().get(GORUNUM_METIN_RENGI_ALANI, "") or "Siyah"
+        dlg = wx.SingleChoiceDialog(
+            self,
+            "Metin rengini seçin:",
+            "Metin Rengi",
+            secenekler,
+        )
+        try:
+            if mevcut in secenekler:
+                dlg.SetSelection(secenekler.index(mevcut))
+            if dlg.ShowModal() != wx.ID_OK:
+                self.liste.SetFocus()
+                return
+            metin_rengi = dlg.GetStringSelection().strip()
+            gorunum_ayarlari_kaydet(metin_rengi=metin_rengi)
+            self.gorunum_uygula()
+            ui.message(f"Metin rengi {metin_rengi} olarak ayarlandı.")
+        except MailHatasi as e:
+            ui.message(str(e))
+        except Exception as e:
+            hata_kaydet("Metin rengi ayarlanamadı.", e)
+            ui.message("Metin rengi ayarlanamadı.")
+        finally:
+            dlg.Destroy()
+            wx.CallAfter(self.liste.SetFocus)
+
+    def arka_plan_rengi_sec(self, event=None):
+        secenekler = list(GORUNUM_ARKA_PLAN_RENKLERI.keys())
+        mevcut = gorunum_ayarlari_yukle().get(GORUNUM_ARKA_PLAN_RENGI_ALANI, "") or "Beyaz"
+        dlg = wx.SingleChoiceDialog(
+            self,
+            "Arka plan rengini seçin:",
+            "Arka Plan Rengi",
+            secenekler,
+        )
+        try:
+            if mevcut in secenekler:
+                dlg.SetSelection(secenekler.index(mevcut))
+            if dlg.ShowModal() != wx.ID_OK:
+                self.liste.SetFocus()
+                return
+            arka_plan_rengi = dlg.GetStringSelection().strip()
+            gorunum_ayarlari_kaydet(arka_plan_rengi=arka_plan_rengi)
+            self.gorunum_uygula()
+            ui.message(f"Arka plan rengi {arka_plan_rengi} olarak ayarlandı.")
+        except MailHatasi as e:
+            ui.message(str(e))
+        except Exception as e:
+            hata_kaydet("Arka plan rengi ayarlanamadı.", e)
+            ui.message("Arka plan rengi ayarlanamadı.")
+        finally:
+            dlg.Destroy()
+            wx.CallAfter(self.liste.SetFocus)
+
+    def gorunumu_varsayilana_dondur(self, event=None):
+        if gorunum_ayarlari_sifirla():
+            self.gorunum_uygula()
+            ui.message("Yazı tipi, yazı tipi boyutu, yazı stili, metin rengi ve arka plan rengi varsayılana döndürüldü.")
+        else:
+            ui.message("Görünüm ayarları sıfırlanamadı. Lütfen dosya izinlerini kontrol edin.")
+        wx.CallAfter(self.liste.SetFocus)
 
     def hesap_bilgisi_var_mi(self):
         ayarlar = ayarlari_yukle()
@@ -2158,6 +3084,60 @@ class GelenKutusuPenceresi(wx.Frame):
         self.liste.InsertItem(0, "Hesap bilgisi bulunamadı. Alt tuşuyla Dosya menüsünden Bağlan seçeneğini kullanın.")
         try:
             self.k_kutu.Enable()
+        except Exception:
+            pass
+
+    def hesap_bilgilerini_sil(self, event=None):
+        sonuc = gui.messageBox(
+            "Kayıtlı hesap bilgilerini silmek istiyor musunuz? Bu işlem yalnızca Engelsiz Mail üzerinde kayıtlı e-posta adresini ve uygulama şifresini siler.",
+            "Hesap Bilgilerini Sil",
+            wx.YES_NO | wx.ICON_QUESTION,
+            self,
+        )
+        if sonuc != wx.YES:
+            return
+        try:
+            ayarlar = guvenli_json_oku(AYARLAR_DOSYASI, {})
+            if not isinstance(ayarlar, dict):
+                ayarlar = {}
+            ayarlar.pop("eposta", None)
+            ayarlar.pop(SIFRE_DPAPI_ALANI, None)
+            ayarlar.pop(SIFRE_DUZ_METIN_ALANI, None)
+            guvenli_json_yaz(AYARLAR_DOSYASI, ayarlar)
+            self.mailler = []
+            self.isaretliler.clear()
+            self.hesap_bilgisi_eksik_goster()
+            ui.message("Kayıtlı hesap bilgileri silindi.")
+        except Exception as e:
+            hata_kaydet("Hesap bilgileri silinemedi.", e)
+            ui.message("Hesap bilgileri silinirken bir hata oluştu.")
+
+    def baglantiyi_denetle_menu(self, event=None):
+        if getattr(self, "_baglanti_denetleniyor", False):
+            ui.message("Bağlantı denetimi zaten devam ediyor. Lütfen bekleyin.")
+            return
+        self._baglanti_denetleniyor = True
+        ui.message("Bağlantı denetimi başlatıldı. Lütfen bekleyin.")
+        arka_planda_calistir(self._baglantiyi_denetle_thread)
+
+    def _baglantiyi_denetle_thread(self):
+        try:
+            basarili, rapor = baglanti_denetimini_yap()
+        except Exception as e:
+            hata_kaydet("Bağlantı denetimi tamamlanamadı.", e)
+            basarili = False
+            rapor = "Bağlantı denetimi tamamlanamadı.\n\n" + baglanti_hatasi_kullanici_mesaji(e)
+        guvenli_call_after(self, self._baglanti_denetimi_goster, basarili, rapor)
+
+    def _baglanti_denetimi_goster(self, basarili, rapor):
+        self._baglanti_denetleniyor = False
+        pencere = BaglantiDenetimSonucPenceresi(self, basarili, rapor)
+        try:
+            pencere.ShowModal()
+        finally:
+            pencere.Destroy()
+        try:
+            self.liste.SetFocus()
         except Exception:
             pass
 
@@ -2181,6 +3161,16 @@ class GelenKutusuPenceresi(wx.Frame):
 
     def yardim_kilavuzunu_ac(self, event=None):
         yardim_belgesini_ac()
+
+    def ne_yeni_ac(self, event=None):
+        ne_yeni_belgesini_ac()
+
+    def hakkinda_ac(self, event=None):
+        hakkinda_penceresini_ac(self)
+        try:
+            self.liste.SetFocus()
+        except Exception:
+            pass
 
     def oneri_gorus_ac(self, event=None):
         pencere = OneriGorusPenceresi(self)
@@ -2239,45 +3229,76 @@ class GelenKutusuPenceresi(wx.Frame):
         taslaklar = self.klasor_haritasi.get("Taslaklar", VARSAYILAN_KLASOR_HARITASI["Taslaklar"])
         return str(klasor) == str(taslaklar) or self.secili_kategori == "Taslaklar"
 
-    def taslak_silme_onayi_al(self):
+    def spam_klasoru_mu(self, klasor):
+        spam = self.klasor_haritasi.get("Spam", VARSAYILAN_KLASOR_HARITASI["Spam"])
+        return str(klasor) == str(spam) or self.secili_kategori == "Spam"
+
+    def taslak_silme_onayi_al(self, adet=1):
+        soru = (
+            "Bu taslağı kalıcı olarak silmek istiyor musunuz?"
+            if adet == 1
+            else f"Seçili {adet} taslağı kalıcı olarak silmek istiyor musunuz?"
+        )
         return gui.messageBox(
-            "Bu taslağı silmek istiyor musunuz?",
+            soru,
             "Taslak Silme Onayı",
             wx.YES_NO | wx.ICON_WARNING,
         ) == wx.YES
 
     def tum_postalar_arsiv_onayi_al(self, adet):
         soru = (
-            "Seçili mesaj Tüm Postalar klasöründen özel bir arşiv klasörüne taşınacaktır. "
+            "Seçili e-posta Tüm Postalar klasöründen özel bir arşiv klasörüne taşınacaktır. "
             "Gmail'in etiket davranışı hesap ayarlarınıza göre değişebilir. Devam etmek istiyor musunuz?"
             if adet == 1
-            else f"Seçili {adet} mesaj Tüm Postalar klasöründen özel bir arşiv klasörüne taşınacaktır. "
+            else f"Seçili {adet} e-posta Tüm Postalar klasöründen özel bir arşiv klasörüne taşınacaktır. "
             "Gmail'in etiket davranışı hesap ayarlarınıza göre değişebilir. Devam etmek istiyor musunuz?"
         )
         return gui.messageBox(soru, "Tüm Postalar Arşivleme Uyarısı", wx.YES_NO | wx.ICON_WARNING) == wx.YES
 
-    def silme_onayi_al(self, adet, kaynak_klasor):
+    def mail_konusunu_bul(self, mail_id):
+        hedef = str(mail_id or "")
+        for mesaj in self.mailler:
+            if str(mesaj.get("id", "")) == hedef:
+                konu = str(mesaj.get("konu", "")).strip()
+                return konu or "Konusuz"
+        return "Konusuz"
+
+    def konu_ifadesi(self, konu):
+        konu = str(konu or "").strip() or "Konusuz"
+        return f"'{konu}' konulu"
+
+    def silme_onayi_al(self, adet, kaynak_klasor, konu=None):
+        if self.taslak_klasoru_mu(kaynak_klasor):
+            return self.taslak_silme_onayi_al(adet)
+        konu_etiketi = self.konu_ifadesi(konu) if adet == 1 and konu else "Seçili"
         if self.cop_klasoru_mu(kaynak_klasor):
             soru = (
-                "Bu mesaj çöp kutusundan kalıcı olarak silinecektir. Devam etmek istiyor musunuz?"
+                f"{konu_etiketi} e-posta Çöp Kutusu'ndan kalıcı olarak silinecektir. Devam etmek istiyor musunuz?"
                 if adet == 1
-                else f"Seçili {adet} mesaj çöp kutusundan kalıcı olarak silinecektir. Devam etmek istiyor musunuz?"
+                else f"Seçili {adet} e-posta Çöp Kutusu'ndan kalıcı olarak silinecektir. Devam etmek istiyor musunuz?"
             )
             baslik = "Kalıcı Silme Onayı"
+        elif self.spam_klasoru_mu(kaynak_klasor):
+            soru = (
+                f"{konu_etiketi} spam e-postası Çöp Kutusu'na taşınacaktır. Devam etmek istiyor musunuz?"
+                if adet == 1
+                else f"Seçili {adet} spam e-postası Çöp Kutusu'na taşınacaktır. Devam etmek istiyor musunuz?"
+            )
+            baslik = "Spam Silme Uyarısı"
         elif self.tum_postalar_klasoru_mu(kaynak_klasor):
             soru = (
-                "Seçili mesaj Tüm Postalar klasöründen çöp kutusuna taşınacaktır. "
-                "Bu işlem, Gmail hesabınızda mesajı çöp kutusuna taşıyabilir. Devam etmek istiyor musunuz?"
+                f"{konu_etiketi} e-posta Tüm Postalar klasöründen Çöp Kutusu'na taşınacaktır. "
+                "Bu işlem, Gmail hesabınızda e-postayı Çöp Kutusu'na taşıyabilir. Devam etmek istiyor musunuz?"
                 if adet == 1
-                else f"Seçili {adet} mesaj Tüm Postalar klasöründen çöp kutusuna taşınacaktır. "
-                "Bu işlem, Gmail hesabınızda mesajları çöp kutusuna taşıyabilir. Devam etmek istiyor musunuz?"
+                else f"Seçili {adet} e-posta Tüm Postalar klasöründen Çöp Kutusu'na taşınacaktır. "
+                "Bu işlem, Gmail hesabınızda e-postaları Çöp Kutusu'na taşıyabilir. Devam etmek istiyor musunuz?"
             )
             baslik = "Tüm Postalar Silme Uyarısı"
         else:
             soru = (
-                "Seçili mesajı çöp kutusuna taşımak istiyor musunuz?"
+                f"{konu_etiketi} e-postayı Çöp Kutusu'na taşımak istiyor musunuz?"
                 if adet == 1
-                else f"Seçili {adet} mesajı çöp kutusuna taşımak istiyor musunuz?"
+                else f"Seçili {adet} e-postayı Çöp Kutusu'na taşımak istiyor musunuz?"
             )
             baslik = "Silme Onayı"
         return gui.messageBox(soru, baslik, wx.YES_NO | wx.ICON_WARNING) == wx.YES
@@ -2314,7 +3335,27 @@ class GelenKutusuPenceresi(wx.Frame):
         if not pencere_kullanilabilir_mi(self):
             return
         if self.yukleniyor:
-            ui.message("Devam eden işleminiz tamamlandıktan sonra yeniden deneyin.")
+            if sessiz:
+                wx.CallLater(
+                    YENILEME_GECIKMESI_MS,
+                    self.verileri_yukle_tetikle,
+                    liste_mesaji,
+                    kategori_adi,
+                    korunan_mail_id,
+                    korunan_indeks,
+                    sessiz,
+                )
+            else:
+                ui.message("Devam eden işlem tamamlanınca e-posta listesi otomatik yenilenecek.")
+                wx.CallLater(
+                    YENILEME_GECIKMESI_MS,
+                    self.verileri_yukle_tetikle,
+                    liste_mesaji,
+                    kategori_adi,
+                    korunan_mail_id,
+                    korunan_indeks,
+                    True,
+                )
             return
 
         hedef_kategori = kategori_adi or self.bekleyen_kategori or self.secili_kategori
@@ -2341,9 +3382,29 @@ class GelenKutusuPenceresi(wx.Frame):
         kaynak_klasor = self.klasor_haritasi.get(hedef_kategori, self.aktif_klasor())
         arka_planda_calistir(self.verileri_yukle, hedef_kategori, kaynak_klasor)
 
+    def yenilemeyi_gecikmeli_tetikle(self, liste_mesaji=None, kategori_adi=None, korunan_mail_id=None, korunan_indeks=None, sessiz=True, gecikme_ms=YENILEME_GECIKMESI_MS):
+        """İşlem sonrası yenilemeyi kısa gecikmeyle başlatır; hızlı ardışık işlemlerde gereksiz uyarıyı engeller."""
+        if not pencere_kullanilabilir_mi(self):
+            return
+        wx.CallLater(
+            int(gecikme_ms),
+            self.verileri_yukle_tetikle,
+            liste_mesaji,
+            kategori_adi,
+            korunan_mail_id,
+            korunan_indeks,
+            sessiz,
+        )
+
+    def yeni_eposta_gonderildi(self):
+        if self.hesap_bilgisi_var_mi():
+            self.yenilemeyi_gecikmeli_tetikle(None, self.secili_kategori, None, None, True)
+        return False
+
     def yeni_posta_yaz(self, event=None):
         pencere = YeniPostaPenceresi(
             self,
+            gonderildi_callback=lambda: self.yeni_eposta_gonderildi(),
             taslak_kaydet_callback=lambda: self.taslak_kaydedildi(),
             taslak_klasor_adaylari=self.taslak_klasor_adaylari(),
         )
@@ -2355,6 +3416,19 @@ class GelenKutusuPenceresi(wx.Frame):
     def listeyi_yenile(self, event=None):
         ui.message("Liste yenileniyor.")
         self.verileri_yukle_tetikle("E-postalar güncelleniyor...")
+
+    def secili_epostayi_ac(self, event=None):
+        indeks = self.liste.GetFocusedItem()
+        if indeks == -1 or indeks >= len(self.mailler):
+            ui.message("Lütfen açmak için e-posta seçin.")
+            return
+        mail_id = self.mailler[indeks]["id"]
+        kaynak_klasor = self.aktif_klasor()
+        if self.taslak_klasoru_mu(kaynak_klasor):
+            ui.message("Taslak düzenleniyor.")
+        else:
+            ui.message("E-posta görüntüleniyor.")
+        arka_planda_calistir(self.sunucudan_icerik_indir, mail_id, kaynak_klasor)
 
     def mesaj_oku(self, event):
         indeks = event.GetIndex()
@@ -2378,10 +3452,10 @@ class GelenKutusuPenceresi(wx.Frame):
                     raise MailHatasi("Seçili klasör açılamadı.")
                 tip, veri = imap.uid("FETCH", str(mail_id), "(BODY.PEEK[])")
                 if tip != "OK":
-                    raise MailHatasi("Mesaj içeriği alınamadı.")
+                    raise MailHatasi("E-posta içeriği alınamadı.")
                 ham_veri = ham_mesaj_verisi_al(veri)
                 if not ham_veri:
-                    raise MailHatasi("Mesaj içeriği boş döndü.")
+                    raise MailHatasi("E-posta içeriği boş döndü.")
 
                 mesaj = email.message_from_bytes(ham_veri, policy=email_policy.default)
                 icerik, ekler = mesaj_metni_ve_ekleri_cikar(mesaj)
@@ -2413,8 +3487,8 @@ class GelenKutusuPenceresi(wx.Frame):
             hata_kaydet(str(e))
             guvenli_call_after(self, ui.message, str(e))
         except Exception as e:
-            hata_kaydet("Mesaj içeriği indirilemedi.", e)
-            guvenli_call_after(self, ui.message, "Mesaj açılırken bir hata oluştu.")
+            hata_kaydet("E-posta içeriği indirilemedi.", e)
+            guvenli_call_after(self, ui.message, "E-posta açılırken bir hata oluştu.")
 
     def taslak_penceresini_ac(self, veri):
         if not pencere_kullanilabilir_mi(self):
@@ -2453,7 +3527,7 @@ class GelenKutusuPenceresi(wx.Frame):
             return True
 
         if self.secili_kategori == "Taslaklar" and self.hesap_bilgisi_var_mi():
-            wx.CallLater(700, self.verileri_yukle_tetikle, None, self.secili_kategori, None, None, True)
+            self.yenilemeyi_gecikmeli_tetikle(None, self.secili_kategori, None, None, True)
         return False
 
     def taslak_sil_iste(self, mail_id, kaynak_klasor):
@@ -2562,19 +3636,19 @@ class GelenKutusuPenceresi(wx.Frame):
 
             if not silindi:
                 hata_kaydet(son_hata or "Taslak silinemedi.")
-                raise MailHatasi("Taslak Gmail tarafından kaldırılmadı. Liste yenileniyor.")
+                raise MailHatasi("Taslak, Gmail tarafından kaldırılmadı. Liste yenileniyor.")
 
             if basari_mesaji:
                 guvenli_call_after(self, ui.message, basari_mesaji)
-            guvenli_call_after(self, self.verileri_yukle_tetikle, None, self.secili_kategori, None, None, True)
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, None, self.secili_kategori, None, None, True)
         except MailHatasi as e:
             hata_kaydet(str(e))
             guvenli_call_after(self, ui.message, str(e))
-            guvenli_call_after(self, self.verileri_yukle_tetikle, None, self.secili_kategori, None, None, True)
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, None, self.secili_kategori, None, None, True)
         except Exception as e:
             hata_kaydet("Taslak silinemedi.", e)
             guvenli_call_after(self, ui.message, "Taslak silinirken bir hata oluştu.")
-            guvenli_call_after(self, self.verileri_yukle_tetikle, None, self.secili_kategori, None, None, True)
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, None, self.secili_kategori, None, None, True)
 
     def okuma_penceresini_ac(self, veri):
         if not pencere_kullanilabilir_mi(self):
@@ -2590,9 +3664,51 @@ class GelenKutusuPenceresi(wx.Frame):
                 sessiz=True,
             )
 
+    def arsiv_klasorlerini_yonet(self, event=None):
+        if self.yukleniyor:
+            ui.message("Devam eden işlem tamamlandıktan sonra yeniden deneyin.")
+            return
+        if not self.hesap_bilgisi_var_mi():
+            ui.message("Arşiv klasörlerini yönetmek için önce Dosya menüsünden Bağlan seçeneğiyle Gmail hesabınızı bağlayın.")
+            return
+        pencere = ArsivYonetimPenceresi(self, self.ozel_klasorler, self)
+        try:
+            pencere.ShowModal()
+        finally:
+            pencere.Destroy()
+        if pencere_kullanilabilir_mi(self):
+            wx.CallAfter(self.liste.SetFocus)
+
+    def arsiv_silindi_sonrasi_guncelle(self, silinen_klasor_adi):
+        silinen_klasor_adi = str(silinen_klasor_adi or "").strip()
+        if silinen_klasor_adi:
+            self.klasor_haritasi.pop(silinen_klasor_adi, None)
+            if silinen_klasor_adi in self.ozel_klasorler:
+                self.ozel_klasorler = [ad for ad in self.ozel_klasorler if ad != silinen_klasor_adi]
+        if self.secili_kategori == silinen_klasor_adi or self.bekleyen_kategori == silinen_klasor_adi or self.yuklu_kategori == silinen_klasor_adi:
+            self.secili_kategori = "Gelen Kutusu"
+            self.bekleyen_kategori = "Gelen Kutusu"
+            self.yuklu_kategori = "Gelen Kutusu"
+        self.klasor_secimi_programatik = True
+        try:
+            self.k_kutu.Clear()
+            for kategori in self.kategori_isimleri + self.ozel_klasorler:
+                self.k_kutu.Append(kategori)
+            indeks = self.k_kutu.FindString(self.secili_kategori)
+            if indeks == wx.NOT_FOUND:
+                indeks = self.k_kutu.FindString("Gelen Kutusu")
+                self.secili_kategori = "Gelen Kutusu"
+                self.bekleyen_kategori = "Gelen Kutusu"
+            if indeks != wx.NOT_FOUND:
+                self.k_kutu.SetSelection(indeks)
+        finally:
+            self.klasor_secimi_programatik = False
+        self.yenilemeyi_gecikmeli_tetikle("Klasörler güncelleniyor...", self.secili_kategori, None, None, False)
+        wx.CallAfter(self.liste.SetFocus)
+
     def arsiv_secim_goster(self, sids, kaynak_klasor=None):
         if not sids:
-            ui.message("Arşivlenecek mesaj bulunamadı.")
+            ui.message("Arşivlenecek e-posta bulunamadı.")
             return
         kaynak_klasor = kaynak_klasor or self.aktif_klasor()
         if self.tum_postalar_klasoru_mu(kaynak_klasor) and not self.tum_postalar_arsiv_onayi_al(len(sids)):
@@ -2602,25 +3718,70 @@ class GelenKutusuPenceresi(wx.Frame):
         try:
             if dlg.ShowModal() != wx.ID_OK:
                 return
-            secim = dlg.secilen_isim
-            if secim == YENI_ARSIV_SECENEGI:
-                yeni_dlg = YeniKlasorPenceresi(self)
-                try:
-                    if yeni_dlg.ShowModal() != wx.ID_OK:
-                        return
-                    hedef = yeni_dlg.klasor_adi
-                    yeni_mi = True
-                finally:
-                    yeni_dlg.Destroy()
-            else:
-                hedef = secim
-                yeni_mi = False
+            hedef = dlg.secilen_isim
+            if not hedef:
+                ui.message("Lütfen hedef arşiv klasörünü seçin. Arşiv yoksa Düzen menüsünden Arşiv Klasörlerini Yönet seçeneğiyle yeni arşiv oluşturun.")
+                return
 
             self.listeden_mesajlari_kaldir(sids)
-            ui.message(f"Mesajlar '{hedef}' klasörüne arşivleniyor.")
-            arka_planda_calistir(self.sunucudan_ozel_arsivle, sids, hedef, yeni_mi, kaynak_klasor)
+            ui.message(f"E-postalar '{hedef}' klasörüne arşivleniyor.")
+            arka_planda_calistir(self.sunucudan_ozel_arsivle, sids, hedef, False, kaynak_klasor)
         finally:
             dlg.Destroy()
+
+    def arsiv_klasoru_olustur(self, klasor_adi):
+        ui.message("Arşiv oluşturuluyor.")
+        arka_planda_calistir(self.sunucudan_arsiv_olustur_thread, klasor_adi)
+
+    def sunucudan_arsiv_olustur_thread(self, klasor_adi):
+        ayarlar = ayarlari_yukle()
+        try:
+            klasor_adi = str(klasor_adi or "").strip()
+            if not klasor_adi:
+                raise MailHatasi("Arşiv adı boş olamaz.")
+            if klasor_adi in SISTEM_KLASORLERI or klasor_adi in self.ozel_klasorler:
+                raise MailHatasi("Bu adla bir klasör zaten var.")
+            with ImapBaglantisi(ayarlar) as imap:
+                hedef = imap_klasor_adi_hazirla(klasor_adi)
+                tip, _veri = imap.create(hedef)
+                if tip != "OK":
+                    raise MailHatasi("Arşiv klasörü oluşturulamadı.")
+            guvenli_call_after(self, ui.message, f"'{klasor_adi}' arşiv klasörü oluşturuldu.")
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, "Klasörler güncelleniyor...", klasor_adi, None, None, False)
+        except MailHatasi as e:
+            hata_kaydet(str(e))
+            guvenli_call_after(self, ui.message, str(e))
+        except Exception as e:
+            hata_kaydet("Arşiv klasörü oluşturulamadı.", e)
+            guvenli_call_after(self, ui.message, "Arşiv klasörü oluşturulurken bir hata oluştu.")
+
+    def arsiv_klasoru_yeniden_adlandir(self, eski_ad, yeni_ad):
+        ui.message("Arşiv yeniden adlandırılıyor.")
+        arka_planda_calistir(self.sunucudan_arsiv_yeniden_adlandir_thread, eski_ad, yeni_ad)
+
+    def sunucudan_arsiv_yeniden_adlandir_thread(self, eski_ad, yeni_ad):
+        ayarlar = ayarlari_yukle()
+        try:
+            eski_ad = str(eski_ad or "").strip()
+            yeni_ad = str(yeni_ad or "").strip()
+            if not eski_ad or not yeni_ad:
+                raise MailHatasi("Arşiv adı boş olamaz.")
+            if yeni_ad in SISTEM_KLASORLERI or (yeni_ad in self.ozel_klasorler and yeni_ad != eski_ad):
+                raise MailHatasi("Bu adla bir klasör zaten var.")
+            with ImapBaglantisi(ayarlar) as imap:
+                eski_hedef = self.klasor_haritasi.get(eski_ad, imap_klasor_adi_hazirla(eski_ad))
+                yeni_hedef = imap_klasor_adi_hazirla(yeni_ad)
+                tip, _veri = imap.rename(eski_hedef, yeni_hedef)
+                if tip != "OK":
+                    raise MailHatasi("Arşiv klasörü yeniden adlandırılamadı.")
+            guvenli_call_after(self, ui.message, f"'{eski_ad}' arşivi '{yeni_ad}' olarak yeniden adlandırıldı.")
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, "Klasörler güncelleniyor...", yeni_ad, None, None, False)
+        except MailHatasi as e:
+            hata_kaydet(str(e))
+            guvenli_call_after(self, ui.message, str(e))
+        except Exception as e:
+            hata_kaydet("Arşiv klasörü yeniden adlandırılamadı.", e)
+            guvenli_call_after(self, ui.message, "Arşiv klasörü yeniden adlandırılırken bir hata oluştu.")
 
     def arsiv_klasoru_sil(self, klasor_adi):
         ui.message("Arşiv siliniyor.")
@@ -2635,50 +3796,60 @@ class GelenKutusuPenceresi(wx.Frame):
                 if tip != "OK":
                     raise MailHatasi("Arşiv klasörü silinemedi.")
             guvenli_call_after(self, ui.message, "Arşiv klasörü silindi.")
-            guvenli_call_after(self, self.verileri_yukle_tetikle, "Klasörler güncelleniyor...")
+            guvenli_call_after(self, self.arsiv_silindi_sonrasi_guncelle, klasor_adi)
         except MailHatasi as e:
             hata_kaydet(str(e))
             guvenli_call_after(self, ui.message, str(e))
         except Exception as e:
             hata_kaydet("Arşiv klasörü silinemedi.", e)
-            guvenli_call_after(self, ui.message, "Silme işlemi sırasında bir hata oluştu.")
+            guvenli_call_after(self, ui.message, baglanti_hatasi_kullanici_mesaji(e, "Silme işlemi sırasında bir hata oluştu."))
 
     def sunucudan_ozel_arsivle(self, ids, hedef_isim, yeni_mi, mevcut_klasor):
         ayarlar = ayarlari_yukle()
         try:
             if not ids:
-                raise MailHatasi("Arşivlenecek mesaj bulunamadı.")
+                raise MailHatasi("Arşivlenecek e-posta bulunamadı.")
             with ImapBaglantisi(ayarlar) as imap:
                 hedef = self.klasor_haritasi.get(hedef_isim, imap_klasor_adi_hazirla(hedef_isim))
-                if yeni_mi:
-                    imap.create(hedef)
                 tip, _veri = imap.select(mevcut_klasor, readonly=False)
                 if tip != "OK":
                     raise MailHatasi("Kaynak klasör açılamadı.")
                 uidler = ",".join(str(uid) for uid in ids)
                 tip, _veri = imap.uid("COPY", uidler, hedef)
                 if tip != "OK":
-                    raise MailHatasi("Mesajlar hedef klasöre kopyalanamadı.")
+                    raise MailHatasi("E-postalar hedef klasöre kopyalanamadı.")
                 imap.uid("STORE", uidler, "+FLAGS", "(\\Deleted)")
                 imap.expunge()
-            guvenli_call_after(self, ui.message, f"Mesajlar '{hedef_isim}' klasörüne taşındı.")
-            if yeni_mi:
-                guvenli_call_after(self, self.verileri_yukle_tetikle, "Klasörler güncelleniyor...")
+            guvenli_call_after(self, ui.message, f"E-postalar '{hedef_isim}' klasörüne taşındı.")
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, "Liste yenileniyor...", self.secili_kategori, None, None, False)
         except MailHatasi as e:
             hata_kaydet(str(e))
             guvenli_call_after(self, ui.message, str(e))
-            guvenli_call_after(self, self.verileri_yukle_tetikle, "Liste yenileniyor...")
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, "Liste yenileniyor...", self.secili_kategori, None, None, False)
         except Exception as e:
             hata_kaydet("Arşivleme işlemi başarısız oldu.", e)
             guvenli_call_after(self, ui.message, "Arşivleme sırasında bir hata oluştu.")
-            guvenli_call_after(self, self.verileri_yukle_tetikle, "Liste yenileniyor...")
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, "Liste yenileniyor...", self.secili_kategori, None, None, False)
 
-    def tek_mesaj_sil(self, mail_id, kaynak_klasor=None):
+
+    def tek_mesaj_sil(self, mail_id, kaynak_klasor=None, konu=None):
         kaynak_klasor = kaynak_klasor or self.aktif_klasor()
-        if not self.silme_onayi_al(1, kaynak_klasor):
+        if not mail_id:
+            ui.message("Silinecek e-posta bulunamadı.")
+            return False
+        if self.taslak_klasoru_mu(kaynak_klasor):
+            if not self.taslak_silme_onayi_al(1):
+                self.liste.SetFocus()
+                return False
+            self.listeden_mesajlari_kaldir([mail_id])
+            ui.message("Taslak siliniyor.")
+            arka_planda_calistir(self.sunucudan_taslak_sil, [mail_id], kaynak_klasor, "Taslak silindi.")
+            return True
+        silinecek_konu = konu or self.mail_konusunu_bul(mail_id)
+        if not self.silme_onayi_al(1, kaynak_klasor, silinecek_konu):
             return False
         self.listeden_mesajlari_kaldir([mail_id])
-        ui.message("Mesaj siliniyor.")
+        ui.message("E-posta siliniyor.")
         arka_planda_calistir(self.sunucudan_sil, [mail_id], kaynak_klasor)
         return True
 
@@ -2689,12 +3860,23 @@ class GelenKutusuPenceresi(wx.Frame):
             if indeks != -1 and indeks < len(self.mailler):
                 secili_idler.append(self.mailler[indeks]["id"])
         if not secili_idler:
-            ui.message("Lütfen silmek için mesaj seçin.")
+            ui.message("Lütfen silmek için e-posta seçin.")
             return
 
         adet = len(secili_idler)
         kaynak_klasor = self.aktif_klasor()
-        if not self.silme_onayi_al(adet, kaynak_klasor):
+        if self.taslak_klasoru_mu(kaynak_klasor):
+            if not self.taslak_silme_onayi_al(adet):
+                self.liste.SetFocus()
+                return
+            self.listeden_mesajlari_kaldir(secili_idler)
+            ui.message("Taslak siliniyor." if adet == 1 else "Taslaklar siliniyor.")
+            basari_mesaji = "Taslak silindi." if adet == 1 else "Taslaklar silindi."
+            arka_planda_calistir(self.sunucudan_taslak_sil, secili_idler, kaynak_klasor, basari_mesaji)
+            return
+
+        silinecek_konu = self.mail_konusunu_bul(secili_idler[0]) if adet == 1 else None
+        if not self.silme_onayi_al(adet, kaynak_klasor, silinecek_konu):
             self.liste.SetFocus()
             return
 
@@ -2715,7 +3897,7 @@ class GelenKutusuPenceresi(wx.Frame):
         self.isaretliler.difference_update(id_kumesi)
         if not self.mailler:
             self.liste.DeleteAllItems()
-            self.liste.InsertItem(0, "Bu klasörde gösterilecek mesaj yok.")
+            self.liste.InsertItem(0, "Bu klasörde gösterilecek e-posta yok.")
             wx.CallAfter(self.liste.SetFocus)
         else:
             self.liste_secim_ver(hedef_indeks)
@@ -2724,34 +3906,41 @@ class GelenKutusuPenceresi(wx.Frame):
         ayarlar = ayarlari_yukle()
         try:
             if not ids:
-                raise MailHatasi("Silinecek mesaj bulunamadı.")
+                raise MailHatasi("Silinecek e-posta bulunamadı.")
             with ImapBaglantisi(ayarlar) as imap:
                 tip, _veri = imap.select(klasor, readonly=False)
                 if tip != "OK":
                     raise MailHatasi("Seçili klasör açılamadı.")
                 uidler = ",".join(str(uid) for uid in ids)
                 cop = self.klasor_haritasi.get("Çöp Kutusu", VARSAYILAN_KLASOR_HARITASI["Çöp Kutusu"])
-                if klasor == cop:
+                if str(klasor) == str(cop):
                     imap.uid("STORE", uidler, "+FLAGS", "(\\Deleted)")
                     imap.expunge()
-                    mesaj = "Mesaj çöp kutusundan silindi." if len(ids) == 1 else "Mesajlar çöp kutusundan silindi."
+                    mesaj = "E-posta Çöp Kutusu'ndan kalıcı olarak silindi." if len(ids) == 1 else "E-postalar Çöp Kutusu'ndan kalıcı olarak silindi."
                 else:
                     tip, _veri = imap.uid("COPY", uidler, cop)
                     if tip != "OK":
-                        raise MailHatasi("Mesaj çöp kutusuna kopyalanamadı.")
+                        raise MailHatasi("E-posta Çöp Kutusu'na kopyalanamadı.")
                     imap.uid("STORE", uidler, "+FLAGS", "(\\Deleted)")
                     imap.expunge()
-                    mesaj = "Mesaj çöp kutusuna taşındı." if len(ids) == 1 else "Mesajlar çöp kutusuna taşındı."
+                    if self.spam_klasoru_mu(klasor):
+                        mesaj = "Spam e-postası Çöp Kutusu'na taşındı." if len(ids) == 1 else "Spam e-postaları Çöp Kutusu'na taşındı."
+                    else:
+                        mesaj = "E-posta Çöp Kutusu'na taşındı." if len(ids) == 1 else "E-postalar Çöp Kutusu'na taşındı."
             guvenli_call_after(self, ui.message, mesaj)
-            guvenli_call_after(self, self.verileri_yukle_tetikle, None, self.secili_kategori, None, None, True)
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, None, self.secili_kategori, None, None, True)
         except MailHatasi as e:
             hata_kaydet(str(e))
             guvenli_call_after(self, ui.message, str(e))
-            guvenli_call_after(self, self.verileri_yukle_tetikle, "Liste yenileniyor...")
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, "Liste yenileniyor...", self.secili_kategori, None, None, False)
         except Exception as e:
             hata_kaydet("Silme işlemi başarısız oldu.", e)
-            guvenli_call_after(self, ui.message, "Silme işlemi sırasında bir hata oluştu.")
-            guvenli_call_after(self, self.verileri_yukle_tetikle, "Liste yenileniyor...")
+            guvenli_call_after(self, ui.message, baglanti_hatasi_kullanici_mesaji(e, "Silme işlemi sırasında bir hata oluştu."))
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, "Liste yenileniyor...", self.secili_kategori, None, None, False)
+
+    def acilis_klasor_bildirimi_ver(self):
+        if pencere_kullanilabilir_mi(self):
+            ui.message("Gelen kutusu hazırlanırken lütfen bekleyiniz..")
 
     def kategori_degisti(self, event):
         if getattr(self, "klasor_secimi_programatik", False):
@@ -2782,13 +3971,151 @@ class GelenKutusuPenceresi(wx.Frame):
             )
         event.Skip()
 
+    def secili_eposta_idlerini_al(self):
+        secili_idler = list(self.isaretliler)
+        if not secili_idler:
+            indeks = self.liste.GetFocusedItem()
+            if indeks != -1 and indeks < len(self.mailler):
+                secili_idler.append(self.mailler[indeks]["id"])
+        return secili_idler
+
+    def sag_tik_odagini_guncelle(self, event):
+        try:
+            indeks = -1
+            if hasattr(event, "GetIndex"):
+                try:
+                    indeks = event.GetIndex()
+                except Exception:
+                    indeks = -1
+            if indeks == -1 and hasattr(event, "GetPosition"):
+                try:
+                    konum = event.GetPosition()
+                    if konum.x != -1 or konum.y != -1:
+                        istemci_konum = self.liste.ScreenToClient(konum)
+                        sonuc = self.liste.HitTest(istemci_konum)
+                        indeks = sonuc[0] if isinstance(sonuc, tuple) else sonuc
+                except Exception:
+                    indeks = -1
+            if indeks != -1 and indeks < len(self.mailler):
+                self.liste.Focus(indeks)
+                self.liste.Select(indeks)
+                self.liste.EnsureVisible(indeks)
+        except Exception:
+            pass
+
+    def tasima_hedefleri(self):
+        hedefler = []
+
+        def ekle(ad):
+            ad = str(ad or "").strip()
+            if not ad:
+                return
+            if ad == self.secili_kategori:
+                return
+            if ad not in self.klasor_haritasi:
+                return
+            if ad not in hedefler:
+                hedefler.append(ad)
+
+        ekle("Gelen Kutusu")
+        for ad in self.ozel_klasorler:
+            ekle(ad)
+        return hedefler
+
+    def tasima_onayi_al(self, adet, hedef_adi, konu=None):
+        hedef_adi = str(hedef_adi or "").strip()
+        konu_etiketi = self.konu_ifadesi(konu) if adet == 1 and konu else "Seçili"
+        soru = (
+            f"{konu_etiketi} e-posta '{hedef_adi}' klasörüne taşınacaktır. Devam etmek istiyor musunuz?"
+            if adet == 1
+            else f"Seçili {adet} e-posta '{hedef_adi}' klasörüne taşınacaktır. Devam etmek istiyor musunuz?"
+        )
+        return gui.messageBox(soru, "Taşıma Onayı", wx.YES_NO | wx.ICON_QUESTION) == wx.YES
+
+    def tasi_menu(self, hedef_adi):
+        secili_idler = self.secili_eposta_idlerini_al()
+        if not secili_idler:
+            ui.message("Lütfen taşımak için e-posta seçin.")
+            return
+        hedef_adi = str(hedef_adi or "").strip()
+        if not hedef_adi or hedef_adi not in self.klasor_haritasi:
+            ui.message("Hedef klasör bulunamadı.")
+            return
+        if hedef_adi == self.secili_kategori:
+            ui.message("E-posta zaten seçili klasörde bulunuyor.")
+            return
+        kaynak_klasor = self.aktif_klasor()
+        hedef_klasor = self.klasor_haritasi.get(hedef_adi)
+        if str(kaynak_klasor) == str(hedef_klasor):
+            ui.message("Kaynak ve hedef klasör aynı.")
+            return
+        adet = len(secili_idler)
+        konu = self.mail_konusunu_bul(secili_idler[0]) if adet == 1 else None
+        if not self.tasima_onayi_al(adet, hedef_adi, konu):
+            self.liste.SetFocus()
+            return
+        self.listeden_mesajlari_kaldir(secili_idler)
+        ui.message(f"E-postalar '{hedef_adi}' klasörüne taşınıyor." if adet > 1 else f"E-posta '{hedef_adi}' klasörüne taşınıyor.")
+        arka_planda_calistir(self.sunucudan_tasi, secili_idler, kaynak_klasor, hedef_adi)
+
+    def sunucudan_tasi(self, ids, kaynak_klasor, hedef_adi):
+        ayarlar = ayarlari_yukle()
+        try:
+            if not ids:
+                raise MailHatasi("Taşınacak e-posta bulunamadı.")
+            hedef_adi = str(hedef_adi or "").strip()
+            hedef_klasor = self.klasor_haritasi.get(hedef_adi)
+            if not hedef_klasor:
+                raise MailHatasi("Hedef klasör bulunamadı.")
+            if str(kaynak_klasor) == str(hedef_klasor):
+                raise MailHatasi("Kaynak ve hedef klasör aynı.")
+            with ImapBaglantisi(ayarlar) as imap:
+                tip, _veri = imap.select(kaynak_klasor, readonly=False)
+                if tip != "OK":
+                    raise MailHatasi("Kaynak klasör açılamadı.")
+                uidler = ",".join(str(uid) for uid in ids)
+                tip, _veri = imap.uid("COPY", uidler, hedef_klasor)
+                if tip != "OK":
+                    raise MailHatasi("E-postalar hedef klasöre kopyalanamadı.")
+                tip, _veri = imap.uid("STORE", uidler, "+FLAGS", "(\\Deleted)")
+                if tip != "OK":
+                    raise MailHatasi("E-postalar kaynak klasörden kaldırılamadı.")
+                imap.expunge()
+            mesaj = f"E-posta '{hedef_adi}' klasörüne taşındı." if len(ids) == 1 else f"E-postalar '{hedef_adi}' klasörüne taşındı."
+            guvenli_call_after(self, ui.message, mesaj)
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, "Liste yenileniyor...", self.secili_kategori, None, None, True)
+        except MailHatasi as e:
+            hata_kaydet(str(e))
+            guvenli_call_after(self, ui.message, str(e))
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, "Liste yenileniyor...", self.secili_kategori, None, None, False)
+        except Exception as e:
+            hata_kaydet("Taşıma işlemi başarısız oldu.", e)
+            guvenli_call_after(self, ui.message, baglanti_hatasi_kullanici_mesaji(e, "Taşıma işlemi sırasında bir hata oluştu."))
+            guvenli_call_after(self, self.yenilemeyi_gecikmeli_tetikle, "Liste yenileniyor...", self.secili_kategori, None, None, False)
+
     def sag_tik_menusu(self, event):
+        self.sag_tik_odagini_guncelle(event)
         menu = wx.Menu()
-        menu.Append(self.id_tumunu, "Tümünü İşaretle\tAlt+A")
-        menu.Append(self.id_kaldir, "İşaretleri Kaldır\tAlt+D")
+        menu.Append(self.id_ac, "Aç")
+        menu.Append(self.id_arsiv, "Arşive Gönder	Alt+R")
+
+        tasi_alt_menu = wx.Menu()
+        hedefler = self.tasima_hedefleri()
+        if hedefler:
+            for hedef in hedefler:
+                hedef_id = wx.NewId()
+                tasi_alt_menu.Append(hedef_id, hedef)
+                self.Bind(wx.EVT_MENU, lambda evt, hedef=hedef: self.tasi_menu(hedef), id=hedef_id)
+        else:
+            bos_item = tasi_alt_menu.Append(wx.ID_ANY, "Taşınabilecek klasör yok")
+            bos_item.Enable(False)
+        menu.AppendSubMenu(tasi_alt_menu, "Taşı")
+
+        menu.Append(self.id_sil, "Sil	Alt+S")
+        menu.Append(self.id_yenile, "Yenile	F5")
         menu.AppendSeparator()
-        menu.Append(self.id_arsiv, "Arşiv\tAlt+R")
-        menu.Append(self.id_sil, "Sil\tAlt+S")
+        menu.Append(self.id_tumunu, "Tümünü İşaretle	Alt+A")
+        menu.Append(self.id_kaldir, "İşaretleri Kaldır	Alt+D")
         self.liste.PopupMenu(menu)
         menu.Destroy()
 
@@ -2799,19 +4126,19 @@ class GelenKutusuPenceresi(wx.Frame):
             if indeks != -1 and indeks < len(self.mailler):
                 secili_idler.append(self.mailler[indeks]["id"])
         if not secili_idler:
-            ui.message("Lütfen arşive göndermek için mesaj seçin.")
+            ui.message("Lütfen arşive göndermek için e-posta seçin.")
             return
         self.arsiv_secim_goster(secili_idler)
 
     def tumunu_isaretle(self, event=None):
         if not self.mailler:
-            ui.message("İşaretlenecek mesaj yok.")
+            ui.message("İşaretlenecek e-posta yok.")
             return
         for i, mesaj in enumerate(self.mailler):
             if mesaj["id"] not in self.isaretliler:
                 self.isaretliler.add(mesaj["id"])
                 self.liste.SetItem(i, 0, "[İşaretli] " + mesaj["kimden"])
-        ui.message(f"{len(self.isaretliler)} mesaj işaretlendi.")
+        ui.message(f"{len(self.isaretliler)} e-posta işaretlendi.")
 
     def isaretleri_kaldir(self, event=None):
         if not self.isaretliler:
@@ -2829,7 +4156,7 @@ class GelenKutusuPenceresi(wx.Frame):
             return
         indeks = self.liste.GetFocusedItem()
         if indeks == -1 or indeks >= len(self.mailler):
-            ui.message("İşaretlenecek mesaj yok.")
+            ui.message("İşaretlenecek e-posta yok.")
             return
         mail_id = self.mailler[indeks]["id"]
         if mail_id in self.isaretliler:
@@ -2839,7 +4166,7 @@ class GelenKutusuPenceresi(wx.Frame):
         else:
             self.isaretliler.add(mail_id)
             self.liste.SetItem(indeks, 0, "[İşaretli] " + self.mailler[indeks]["kimden"])
-            ui.message("Mesaj işaretlendi.")
+            ui.message("E-posta işaretlendi.")
 
     def verileri_yukle(self, kategori_adi=None, kaynak_klasor=None):
         ayarlar = ayarlari_yukle()
@@ -2857,7 +4184,7 @@ class GelenKutusuPenceresi(wx.Frame):
                     raise MailHatasi("Seçili klasör açılamadı.")
                 tip, veri = imap.uid("SEARCH", "ALL")
                 if tip != "OK":
-                    raise MailHatasi("Mesaj listesi alınamadı.")
+                    raise MailHatasi("E-posta listesi alınamadı.")
                 uidler = uidleri_ayristir(veri)
 
                 yeni_mailler = []
@@ -2890,8 +4217,8 @@ class GelenKutusuPenceresi(wx.Frame):
             hata_kaydet(str(e))
             guvenli_call_after(self, self.yukleme_hatali, str(e))
         except Exception as e:
-            hata_kaydet("Mesaj listesi yüklenemedi.", e)
-            guvenli_call_after(self, self.yukleme_hatali, "Bağlantı sorunu. Lütfen internet bağlantınızı ve Google uygulama şifrenizi kontrol edin.")
+            hata_kaydet("E-posta listesi yüklenemedi.", e)
+            guvenli_call_after(self, self.yukleme_hatali, baglanti_hatasi_kullanici_mesaji(e))
 
     def klasorleri_guncelle(self, imap):
         tip, veri = imap.list()
@@ -2908,7 +4235,7 @@ class GelenKutusuPenceresi(wx.Frame):
             imap_degeri = imap_tirnakli_ham_ad(imap_adi)
 
             if "\\SENT" in bayraklar:
-                yeni_harita["Gönderilmiş Öğeler"] = imap_degeri
+                yeni_harita["Gönderilen E-postalar"] = imap_degeri
             elif "\\DRAFTS" in bayraklar:
                 yeni_harita["Taslaklar"] = imap_degeri
             elif "\\TRASH" in bayraklar:
@@ -2985,7 +4312,7 @@ class GelenKutusuPenceresi(wx.Frame):
         self._yenileme_sessiz = False
 
         if not self.mailler:
-            self.liste.InsertItem(0, "Bu klasörde gösterilecek mesaj yok.")
+            self.liste.InsertItem(0, "Bu klasörde gösterilecek e-posta yok.")
             wx.CallAfter(self.liste.SetFocus)
         else:
             for i, mesaj in enumerate(self.mailler):
@@ -3006,7 +4333,7 @@ class GelenKutusuPenceresi(wx.Frame):
             self.ilk_yukleme = False
 
         if not sessiz_yenileme:
-            ui.message(f"{self.secili_kategori} klasörü hazır. {len(self.mailler)} mesaj listelendi.")
+            ui.message(f"{self.secili_kategori} klasörü hazır. {len(self.mailler)} e-posta listelendi.")
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -3067,12 +4394,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             pencere.Show()
             pencere.Raise()
 
-            if pencere.hesap_bilgisi_var_mi():
-                wx.CallLater(
-                    1000,
-                    bildirim_soyle,
-                    "E-postalarınız yükleniyor. Lütfen bekleyiniz."
-                )
+            wx.CallLater(
+                900,
+                pencere.acilis_klasor_bildirimi_ver
+            )
         wx.CallAfter(ac)
 
     __gestures = {"kb:nvda+shift+m": "gelen_ac"}

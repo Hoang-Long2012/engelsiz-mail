@@ -1,6 +1,6 @@
 {
-  "surum": "1.2.0",
-  "link": "https://github.com/MehmetAykurt/engelsiz-mail/releases/download/v1.2.0/Engelsiz-Mail-v1.2.0.nvda-addon",
-  "sha256": "156468e53caaa0197149f9cd59e81bdb1fc2fb04dba37a2d6f894d9213684e0b",
-  "aciklama": "Engelsiz Mail 1.2.0 sürümü; yeni menü sistemi, taslak yönetimi, güvenli şifre saklama, mesaj sayısı ayarı, öneri ve görüş bildirme penceresi, geliştirilmiş yanıt sistemi ve çeşitli kullanım iyileştirmeleri içermektedir."
+  "surum": "1.3.0",
+  "link": "https://github.com/MehmetAykurt/engelsiz-mail/releases/download/v1.3.0/Engelsiz-Mail-v1.3.0.nvda-addon",
+  "sha256": "2454704f261429dceb4ea9f990520a9b1b65b670d6717fc71436e385d46b1529",
+  "aciklama": "Engelsiz Mail 1.3.0 sürümü; geliştirilmiş arşiv yönetimi, arşiv klasörü oluşturma, yeniden adlandırma ve silme işlemleri, Bağlantıyı Denetle özelliği, ayrıntılı bağlantı sorunları raporu, Şifre Oluştur düğmesi, sağ tık menüsü düzeni, e-posta taşıma özelliği, görünüm menüsü, yazı tipi, yazı boyutu, yazı stili, metin rengi ve arka plan rengi ayarları, Yenilikler ve Hakkında bölümleri ile çeşitli erişilebilirlik ve Türkçe metin düzenlemeleri içermektedir."
 }
