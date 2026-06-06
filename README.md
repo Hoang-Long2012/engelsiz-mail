@@ -42,6 +42,12 @@ https://myaccount.google.com/apppasswords
 
 Google tarafından verilen 16 haneli uygulama şifresi, Engelsiz Mail içindeki **Bağlan...** penceresine boşluksuz olarak yazılmalıdır.
 
+## Not
+
+1.3.0 sürümünde ayar dosyaları, daha düzenli bir yapı sağlamak amacıyla `engelsiz-mail` klasörü altında tutulmaya başlanmıştır.
+
+Önceki sürümden güncelleme yapan kullanıcıların, eklentiyi ilk açtıklarında hesap bilgilerini yeniden kaydetmeleri gerekebilir.
+
 ## Kullanım
 
 Eklenti kurulduktan sonra Engelsiz Mail ana penceresi NVDA menüsündeki **Araçlar > Engelsiz Mail** seçeneğiyle veya tanımlı kısayolla açılabilir.
