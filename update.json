@@ -1,6 +1,6 @@
 {
-  "surum": "1.3.0",
-  "link": "https://github.com/MehmetAykurt/engelsiz-mail/releases/download/v1.3.0/Engelsiz-Mail-v1.3.0.nvda-addon",
-  "sha256": "2454704f261429dceb4ea9f990520a9b1b65b670d6717fc71436e385d46b1529",
-  "aciklama": "Engelsiz Mail 1.3.0 sürümü; geliştirilmiş arşiv yönetimi, arşiv klasörü oluşturma, yeniden adlandırma ve silme işlemleri, Bağlantıyı Denetle özelliği, ayrıntılı bağlantı sorunları raporu, Şifre Oluştur düğmesi, sağ tık menüsü düzeni, e-posta taşıma özelliği, görünüm menüsü, yazı tipi, yazı boyutu, yazı stili, metin rengi ve arka plan rengi ayarları, Yenilikler ve Hakkında bölümleri ile çeşitli erişilebilirlik ve Türkçe metin düzenlemeleri içermektedir."
+  "surum": "1.4.0",
+  "link": "https://github.com/MehmetAykurt/engelsiz-mail/releases/download/v1.4.0/Engelsiz-Mail-v1.4.0.nvda-addon",
+  "sha256": "aca56a3430e168cb9caa18c18e12a0597cbe95d85985285ffa1082db0d161da6",
+  "aciklama": "Engelsiz Mail 1.4.0 sürümü; e-posta listesinde isteğe bağlı ön izleme, Türkçe karakter ve MIME kodlaması iyileştirilmiş ön izleme çözümleme, Delete tuşu ile silme, Silerken Onay Sor ayarı, Gönderilen E-postalar ve Taslaklar klasörlerinde Kime bilgisinin gösterilmesi, e-posta okuma penceresinde Kime bilgisi, yeni e-posta bildirimi, bildirim kontrol aralığı ayarı, sesle ve mesajla bildirim seçenekleri, gönderen ve konu bilgisini bildirme seçenekleri, varsayılan sistem sesi veya kullanıcı tanımlı WAV dosyasıyla bildirim verme, aynı e-posta için tekrar bildirim verilmesini engelleyen son bildirim kaydı, e-postayı TXT veya EML biçiminde kaydetme, daha önce kaydedilmiş EML dosyasını açma, sağ tık menüsünün sadeleştirilmesi, bildirim, ön izleme, silme ve dosya işlemlerinde çeşitli erişilebilirlik ve odak iyileştirmeleri içermektedir."
 }
